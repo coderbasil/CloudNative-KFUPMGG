@@ -51,7 +51,7 @@ data "aws_iam_policy_document" "github_oidc_assume" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:*:ref:refs/heads/main"]
+      values   = ["repo:coderbasil/CloudNative-KFUPMGG:*"]
     }
   }
 }
