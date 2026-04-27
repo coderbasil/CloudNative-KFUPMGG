@@ -1,0 +1,258 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap");
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ── Background ──────────────────────────────────── */
+.background-page {
+  width: 100dvw;
+  height: 100dvh;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 20, 10, 0.7)),
+    url("../../public/assets/kfupm-bg.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  display: grid;
+  place-items: center;
+  transform: perspective(500px);
+  transform-style: preserve-3d;
+  overflow: hidden;
+  position: relative;
+}
+
+.background-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Score display ───────────────────────────────── */
+.score {
+  position: fixed;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: clamp(1.4rem, 3.2vmin, 2rem);
+  font-weight: 700;
+  background: rgba(8, 10, 18, 0.65);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.6rem 1.75rem;
+  border-radius: 50px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+  white-space: nowrap;
+}
+
+/* ── 3-D Stage ───────────────────────────────────── */
+.stage {
+  --front-light-color: #1e2230;
+  --stage-height: max(130px, 13vmin);
+  --first-place-height: max(170px, 17vmin);
+  --second-place-height: max(140px, 14vmin);
+  --third-place-height: max(100px, 10vmin);
+
+  width: max(900px, 85vmin);
+  height: max(250px, 25vmin);
+  background: linear-gradient(to bottom, #141824, var(--front-light-color));
+  transform: rotateX(80deg);
+  transform-style: preserve-3d;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  padding-top: max(24px, 2.4vmin);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.stage-front {
+  position: absolute;
+  width: 100%;
+  height: var(--stage-height);
+  padding-bottom: max(30px, 3vmin);
+  background: linear-gradient(to bottom, var(--front-light-color), #0a0c14);
+  transform-origin: top;
+  top: 100%;
+  transform: rotateX(-80deg);
+  display: grid;
+  place-content: center;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: clamp(1.8rem, 3.2vmin, 2.4rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── Towers ──────────────────────────────────────── */
+.tower {
+  --tower-side: max(110px, 11vmin);
+  width: var(--tower-side);
+  aspect-ratio: 1;
+  position: relative;
+  transform-style: preserve-3d;
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.6);
+}
+
+.tower:hover .player {
+  transform: rotateX(-88deg) translateY(calc(-1 * max(1.6rem, 1.6vmin))) scale(1.2);
+}
+
+.tower .face {
+  position: absolute;
+  width: inherit;
+  background: inherit;
+  bottom: 0;
+}
+
+.tower .top {
+  aspect-ratio: inherit;
+  display: grid;
+  place-items: center;
+}
+
+.tower .top .player {
+  color: #fff;
+  font-size: clamp(0.85rem, 1.6vmin, 1.1rem);
+  font-weight: 700;
+  transform: rotateX(-88deg) translateY(calc(-1 * max(1.6rem, 1.6vmin)));
+  transition: transform 250ms ease;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.tower .left {
+  transform-origin: left;
+  left: 0;
+  width: var(--second-place-height);
+  height: var(--tower-side);
+  transform: rotateY(-90deg);
+}
+
+.tower .right {
+  transform-origin: right;
+  right: 0;
+  height: var(--tower-side);
+  width: var(--third-place-height);
+  transform: rotateY(90deg);
+}
+
+.tower .front {
+  transform-origin: bottom;
+  transform: rotateX(90deg) translateY(100%);
+}
+
+/* First place — green */
+.tower.first {
+  transform: translateZ(calc(var(--first-place-height) * -1));
+  background: linear-gradient(to top, #00a85a, #00693a);
+  animation: rise-up-first 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards 0.6s;
+}
+
+.tower.first .top {
+  transform: translateZ(var(--first-place-height));
+  background: radial-gradient(circle at 40% 40%, #00c96b, #00693a);
+  box-shadow: 0 0 32px rgba(0, 201, 107, 0.35);
+}
+
+.tower.first .front {
+  height: var(--first-place-height);
+}
+
+/* Second place — gold */
+.tower.second {
+  transform: translateZ(calc(var(--second-place-height) * -1));
+  background: linear-gradient(to top, #c8971a, #a07010);
+  animation: rise-up-second 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards 0.6s;
+}
+
+.tower.second .top {
+  transform: translateZ(var(--second-place-height));
+  background: radial-gradient(circle at 40% 40%, #ffd740, #c8971a);
+}
+
+.tower.second .left {
+  background: linear-gradient(to left, #c8971a, #a07010);
+}
+
+.tower.second .front {
+  height: var(--second-place-height);
+}
+
+/* Third place — silver-blue */
+.tower.third {
+  transform: translateZ(calc(var(--third-place-height) * -1));
+  background: linear-gradient(to top, #4a6080, #2e4060);
+  animation: rise-up-third 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards 0.6s;
+}
+
+.tower.third .top {
+  transform: translateZ(var(--third-place-height));
+  background: radial-gradient(circle at 40% 40%, #7fa8c8, #4a6080);
+}
+
+.tower.third .right {
+  background: linear-gradient(to right, #4a6080, #2e4060);
+}
+
+.tower.third .front {
+  height: var(--third-place-height);
+}
+
+/* ── Animations ──────────────────────────────────── */
+@keyframes rise-up-first {
+  from { transform: translateZ(calc(var(--first-place-height) * -1)); }
+  to   { transform: translateZ(0px); }
+}
+
+@keyframes rise-up-second {
+  from { transform: translateZ(calc(var(--second-place-height) * -1)); }
+  to   { transform: translateZ(0px); }
+}
+
+@keyframes rise-up-third {
+  from { transform: translateZ(calc(var(--third-place-height) * -1)); }
+  to   { transform: translateZ(0px); }
+}
+
+/* ── Start game button ───────────────────────────── */
+.start-game-btn {
+  background: #00693a;
+  color: #fff;
+  border: none;
+  padding: clamp(0.7rem, 1.2vmin, 1rem) clamp(1.5rem, 2.4vmin, 2rem);
+  font-size: clamp(0.95rem, 1.5vmin, 1.15rem);
+  font-weight: 700;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  border-radius: 50px;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 6px 24px rgba(0, 105, 58, 0.45);
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  white-space: nowrap;
+}
+
+.start-game-btn:hover {
+  background: #00a85a;
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 10px 32px rgba(0, 168, 90, 0.5);
+}
+
+.start-game-btn:active {
+  transform: translateX(-50%) translateY(0);
+}

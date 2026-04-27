@@ -1,0 +1,253 @@
+================================================================
+KFUPM GEOGUESSER — CLOUD-NATIVE MIGRATION PLAN
+================================================================
+
+REQUIREMENTS TO SATISFY
+------------------------
+1. At least two functional services + one data storage service
+2. All infrastructure provisioned via Terraform (no manual AWS console)
+3. Full CI/CD pipeline: git push → build container → deploy to prod automatically
+4. 15-Factor methodology (especially Factor 3: Config, Factor 6: Processes, Factor 9: Disposability)
+
+
+================================================================
+TARGET ARCHITECTURE
+================================================================
+
+  Browser
+    │
+    ▼
+  ALB (Application Load Balancer)
+    ├── /          → ECS Fargate: frontend  (nginx serving React build, port 80)
+    ├── /api/*     → ECS Fargate: api-server (Express, port 5000)
+    └── /admin*    → ECS Fargate: admin-server (Express, port 5001)
+                            │
+                ┌───────────┴───────────┐
+                ▼                       ▼
+           RDS MySQL               S3 Bucket
+           (private subnet)        kfupm-geoguesser (images)
+
+  Supporting AWS services:
+    - ECR        (container image registry — 3 repos)
+    - Secrets Manager  (DB password, JWT secret)
+    - CloudWatch Logs  (stdout/stderr from all containers)
+    - IAM        (OIDC role for GitHub Actions, ECS task role for S3)
+
+  CI/CD:
+    GitHub → GitHub Actions → ECR push → terraform apply → ECS rolling deploy
+
+
+================================================================
+TERRAFORM MODULES
+================================================================
+
+infra/
+  main.tf
+  variables.tf
+  outputs.tf
+  backend.tf          ← S3 remote state + DynamoDB lock
+
+  modules/
+    networking/       ← VPC, public/private/isolated subnets, IGW, NAT
+    security/         ← Security groups for ALB, ECS tasks, RDS
+    ecr/              ← 3 ECR repos (frontend, api-server, admin-server)
+    iam/              ← ECS task execution role, ECS task role (S3 access),
+                         GitHub Actions OIDC role
+    rds/              ← RDS MySQL t3.micro, subnet group, Multi-AZ
+    secrets/          ← Secrets Manager entries for DB_PASSWORD, JWT_SECRET
+    alb/              ← ALB, listeners (80→443 redirect, 443 HTTPS),
+                         3 target groups + listener rules
+    ecs/              ← ECS cluster, 3 task definitions, 3 services,
+                         autoscaling (min=1 max=4, target 60% CPU),
+                         CloudWatch log groups
+    s3/               ← Import existing bucket, set private access,
+                         CORS config, lifecycle rules
+
+
+================================================================
+DOCKERFILES NEEDED
+================================================================
+
+client/Dockerfile
+  - Stage 1: node:20-alpine → npm ci → npm run build
+             (REACT_APP_API_URL injected as --build-arg)
+  - Stage 2: nginx:1.27-alpine → copy build output
+             nginx.conf must include: try_files $uri /index.html;
+
+server/Dockerfile  (api-server)
+  - Stage 1: node:20-alpine → npm ci --omit=dev
+  - Stage 2: copy node_modules + source → EXPOSE 5000 → node server.js
+
+server/Dockerfile.admin  (admin-server)
+  - Stage 1: node:20-alpine → npm ci --omit=dev
+  - Stage 2: copy node_modules + admin/ + admin-server.js → EXPOSE 5001
+
+All Dockerfiles:
+  - Never COPY .env files
+  - Add .dockerignore excluding: node_modules, .env*, uploads/
+
+
+================================================================
+GITHUB ACTIONS PIPELINE (.github/workflows/deploy.yml)
+================================================================
+
+Trigger: push to main
+
+Stage 1 — test
+  - npm ci + npm test for both server/ and client/
+  - Blocks everything if tests fail
+
+Stage 2 — build-push
+  - OIDC auth to AWS (no long-lived keys stored in GitHub)
+  - docker buildx build all 3 images with git SHA tag
+  - Push to ECR
+  - Layer cache via: cache-from/cache-to type=gha
+
+Stage 3 — deploy
+  - hashicorp/setup-terraform
+  - terraform init (S3 backend)
+  - terraform apply -auto-approve with image tag vars
+  - ECS rolling update happens automatically (100% min healthy, 200% max)
+  - Health checks on target groups gate traffic switchover
+
+GitHub secrets needed:
+  AWS_ACCOUNT_ID
+  TF_VAR_db_password
+
+
+================================================================
+CODE CHANGES REQUIRED (before any infra work)
+================================================================
+
+FILE: server/routes/upload.js
+  - Replace multer.diskStorage → multer.memoryStorage()
+  - Add uploadToS3(buffer, mimetype) using @aws-sdk/client-s3 PutObjectCommand
+  - Bucket name from process.env.S3_BUCKET_NAME
+  - Stored URL changes from /uploads/<file> to full S3 HTTPS URL
+
+FILE: server/server.js
+  - Remove: dotenv.config()
+  - Remove: mkdirSync for uploads/
+  - Remove: app.use("/uploads", express.static(...))
+  - Remove: ensureDatabase() — DB created by Terraform, tables by migrate script
+  - Fix CORS: replace hardcoded localhost origins with process.env.ALLOWED_ORIGINS.split(',')
+  - Add graceful shutdown:
+      const server = app.listen(...)
+      async function shutdown(signal) {
+        server.close(async () => {
+          await pool.end()
+          process.exit(0)
+        })
+        setTimeout(() => process.exit(1), 25_000)  // force after 25s
+      }
+      process.on('SIGTERM', () => shutdown('SIGTERM'))
+      process.on('SIGINT',  () => shutdown('SIGINT'))
+
+FILE: server/admin-server.js
+  - Add graceful shutdown:
+      const server = app.listen(...)
+      process.on('SIGTERM', () => server.close(() => process.exit(0)))
+      process.on('SIGINT',  () => server.close(() => process.exit(0)))
+
+FILE: server/db.js
+  - Remove: dotenv.config()
+  - process.env.* reads stay exactly as-is (ECS injects them at runtime)
+
+FILE: server/admin/index.html
+  - Change: const API = 'http://localhost:5000'
+  - To:     const API = ''
+  - All fetch('/api/...') calls become relative — works on any host
+
+NEW FILE: server/scripts/migrate.js
+  - Extracted from ensureDatabase() / initDb()
+  - Run once as an ECS one-off task after RDS is provisioned
+  - Creates users and photos tables
+
+
+================================================================
+15-FACTOR COMPLIANCE
+================================================================
+
+Factor 3 — Config
+  BEFORE: .env file on disk, localhost hardcoded in admin HTML
+  AFTER:  All config injected via ECS task definition environment/secrets blocks
+          Secrets Manager for sensitive values (DB_PASSWORD)
+          Plain environment vars for non-sensitive (DB_HOST, S3_BUCKET_NAME, etc.)
+
+Factor 4 — Backing Services
+  BEFORE: MySQL on manual EC2, images on local disk
+  AFTER:  RDS MySQL (attached via DB_HOST env var), S3 for images
+          Both are swappable by changing an env var — no code change needed
+
+Factor 6 — Processes (stateless)
+  BEFORE: multer writes files to server/uploads/ on local disk
+  AFTER:  Files written directly to S3 — containers have no local state
+          Multiple ECS tasks can run simultaneously without conflict
+
+Factor 9 — Disposability
+  BEFORE: No signal handlers — SIGTERM kills process instantly
+  AFTER:  SIGTERM → stop accepting connections → drain MySQL pool → exit
+          25-second timeout before forced exit (ECS sends SIGKILL at 30s)
+          Fast startup: schema creation removed from boot path
+
+Other factors already met:
+  Factor 1  (Codebase):     Single git repo ✓
+  Factor 2  (Dependencies): package.json + Dockerfile ✓
+  Factor 5  (Build/Release/Run): GitHub Actions separates these ✓
+  Factor 7  (Port binding): Express binds to PORT env var ✓
+  Factor 8  (Concurrency):  ECS autoscaling handles horizontal scale ✓
+  Factor 10 (Dev/prod parity): Docker ensures same environment ✓
+  Factor 11 (Logs):         console.log to stdout → CloudWatch Logs ✓
+  Factor 12 (Admin processes): migrate.js as one-off ECS task ✓
+
+
+================================================================
+IMPLEMENTATION ORDER
+================================================================
+
+Phase 1 — S3 Upload Migration           (~2hr)
+  Swap multer disk storage for S3 PutObjectCommand.
+  Test locally with .env credentials.
+  This unblocks stateless containers.
+
+Phase 2 — Graceful Shutdown + Config    (~1hr)
+  Add SIGTERM handlers to both servers.
+  Remove dotenv from server code.
+  Fix admin API base URL to ''.
+  Externalize CORS origins.
+
+Phase 3 — Dockerfiles + Local Compose   (~2hr)
+  Write all 3 Dockerfiles + .dockerignore files.
+  Write nginx.conf.
+  Write docker-compose.yml for local end-to-end validation.
+  Run docker compose up and test everything.
+
+Phase 4 — Terraform: Networking/IAM/ECR (~3hr)
+  Bootstrap S3 bucket + DynamoDB for Terraform state (one-time manual step).
+  Write and apply: networking, security, iam, ecr modules.
+  Push first Docker images to ECR manually to validate.
+
+Phase 5 — Terraform: RDS + Secrets      (~2hr)
+  Write and apply: rds, secrets modules.
+  Run migrate.js once to create tables on RDS.
+  Verify DB connectivity.
+
+Phase 6 — Terraform: ALB + ECS          (~3hr)
+  Write and apply: alb, ecs modules.
+  Inject secrets from Secrets Manager into ECS task definitions.
+  Verify all 3 paths work via ALB DNS name.
+
+Phase 7 — GitHub Actions CI/CD          (~2hr)
+  Add OIDC IAM role to Terraform iam module.
+  Write .github/workflows/deploy.yml.
+  Push a test commit and watch full pipeline run.
+
+Phase 8 — Hardening                     (~2hr)
+  ACM certificate + HTTPS on ALB (redirect 80→443).
+  S3 private access + presigned URLs for image serving.
+  RDS deletion protection + 7-day backup retention.
+  CloudWatch alarms: ECS CPU >80%, RDS storage <2GB, ALB 5xx >1%.
+  HEALTHCHECK in each Dockerfile + ECS grace period 60s.
+
+TOTAL ESTIMATED EFFORT: ~1.5 to 2 days
+================================================================
