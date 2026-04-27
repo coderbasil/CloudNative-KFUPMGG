@@ -1,0 +1,102 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: eu-north-1
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - name: Install & build client
+        run: npm ci && npm run build
+        working-directory: client
+
+  build-push:
+    name: Build & Push
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      instance_id: ${{ steps.tf-output.outputs.instance_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/kfupm-geo-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build & push API
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          push: true
+          tags: ${{ steps.ecr-login.outputs.registry }}/kfupm-geo-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./client
+          push: true
+          tags: ${{ steps.ecr-login.outputs.registry }}/kfupm-geo-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+          terraform_wrapper: false
+
+      - name: Terraform init & apply
+        run: terraform init && terraform apply -auto-approve -var="db_password=${{ secrets.TF_VAR_db_password }}"
+        working-directory: infra
+
+      - name: Get instance ID
+        id: tf-output
+        run: echo "instance_id=$(terraform output -raw instance_id)" >> $GITHUB_OUTPUT
+        working-directory: infra
+
+  deploy:
+    name: Deploy to EC2
+    needs: build-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/kfupm-geo-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Pull & restart containers via SSM
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "${{ needs.build-push.outputs.instance_id }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["cd /opt/app && bash ecr-login.sh && docker compose pull && docker compose up -d --force-recreate"]' \
+            --query "Command.CommandId" --output text)
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${{ needs.build-push.outputs.instance_id }}"
