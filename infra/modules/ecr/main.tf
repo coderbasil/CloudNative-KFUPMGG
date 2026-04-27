@@ -4,14 +4,18 @@ resource "aws_ecr_repository" "api" {
   name                 = "${var.project}-api"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
-  image_scanning_configuration { scan_on_push = true }
+  image_scanning_configuration {
+    scan_on_push = true
+  }
 }
 
 resource "aws_ecr_repository" "frontend" {
   name                 = "${var.project}-frontend"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
-  image_scanning_configuration { scan_on_push = true }
+  image_scanning_configuration {
+    scan_on_push = true
+  }
 }
 
 resource "aws_ecr_lifecycle_policy" "api" {
