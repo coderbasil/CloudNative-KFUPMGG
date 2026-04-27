@@ -25,7 +25,6 @@ app.use("/api/photos", photos);
 app.use("/api/upload", upload);
 app.use("/api/auth", auth);
 
-
 async function ensureDatabase() {
   const conn = await mysql.createConnection({
     host: process.env.DB_HOST || "localhost",
@@ -71,7 +70,7 @@ async function initDb() {
     console.log("✅ MySQL connected and tables ready");
 
     app.listen(PORT, () =>
-      console.log(`🚀 API listening at http://localhost:${PORT}`)
+      console.log(`🚀 API listening at http://localhost:${PORT}`),
     );
   } catch (err) {
     console.error("❌ Failed to start server:", err);
