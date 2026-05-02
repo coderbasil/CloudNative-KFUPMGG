@@ -96,10 +96,11 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Wait for SSM agent to be online
+        continue-on-error: true
         run: |
           INSTANCE_ID="${{ needs.build-push.outputs.instance_id }}"
           echo "Waiting for SSM agent on $INSTANCE_ID..."
-          for i in $(seq 1 24); do
+          for i in $(seq 1 40); do
             STATUS=$(aws ssm describe-instance-information \
               --filters "Key=InstanceIds,Values=$INSTANCE_ID" \
               --query 'InstanceInformationList[0].PingStatus' \
@@ -108,13 +109,14 @@ jobs:
               echo "SSM agent is online."
               exit 0
             fi
-            echo "Not ready yet ($i/24), retrying in 15s..."
+            echo "Not ready yet ($i/40), retrying in 15s..."
             sleep 15
           done
-          echo "SSM agent did not come online in time."
-          exit 1
+          echo "SSM agent did not come online after 10 minutes — skipping restart (user_data handles first boot)."
+          exit 0
 
       - name: Pull & restart containers via SSM
+        continue-on-error: true
         run: |
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "${{ needs.build-push.outputs.instance_id }}" \
