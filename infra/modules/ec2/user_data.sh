@@ -1,16 +1,23 @@
 #!/bin/bash
 set -xe
 
+exec > >(tee /var/log/user-data.log | logger -t user-data -s 2>/dev/console) 2>&1
+echo "USER DATA STARTED at $(date)"
+
+# Create app directory early so deploy scripts can detect readiness
+mkdir -p /opt/app
+
 # Ensure SSM agent is installed and running before heavy Docker work
 dnf install -y amazon-ssm-agent || true
 systemctl enable --now amazon-ssm-agent || true
 systemctl restart amazon-ssm-agent || true
 
-# Add swap so OOM killer doesn't hit SSM agent during docker pulls
+# Add swap so OOM killer doesn't hit SSM agent during docker pulls.
+# Keep swap creation non-fatal so user_data does not stop if disk is tight.
 if [ ! -f /swapfile ]; then
-  fallocate -l 2G /swapfile
-  chmod 600 /swapfile
-  mkswap /swapfile
+  fallocate -l 2G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=2048 || true
+  chmod 600 /swapfile || true
+  mkswap /swapfile || true
 fi
 
 swapon /swapfile || true
@@ -32,7 +39,6 @@ done
 
 # Install Docker Compose plugin
 mkdir -p /usr/local/lib/docker/cli-plugins
-mkdir -p /opt/app
 
 # Download docker compose with retry
 for i in 1 2 3; do
@@ -49,8 +55,11 @@ if ! command -v aws >/dev/null 2>&1; then
   dnf install -y awscli
 fi
 
+# Remove trailing slash from Lambda API host because nginx upstream cannot contain "/"
+LAMBDA_API_HOST_CLEAN="${lambda_api_host}"
+LAMBDA_API_HOST_CLEAN="$${LAMBDA_API_HOST_CLEAN%/}"
 
-cat > /opt/app/docker-compose.yml << 'COMPOSE'
+cat > /opt/app/docker-compose.yml << COMPOSE
 services:
   api:
     image: ${account_id}.dkr.ecr.${aws_region}.amazonaws.com/${project}-api:latest
@@ -68,7 +77,7 @@ services:
   frontend:
     image: ${account_id}.dkr.ecr.${aws_region}.amazonaws.com/${project}-frontend:latest
     environment:
-      LAMBDA_API_HOST: "${lambda_api_host}"
+      LAMBDA_API_HOST: "$${LAMBDA_API_HOST_CLEAN}"
     ports:
       - "80:80"
     depends_on:
@@ -94,8 +103,12 @@ done
 
 # Pull and start containers
 docker compose pull
-docker compose up -d
+docker compose up -d --force-recreate
+
+# Show status for debugging
+docker ps -a || true
+curl -v http://localhost:80 || true
 
 # Make sure SSM agent is still running after Docker pulls
 systemctl restart amazon-ssm-agent || true
-systemctl status amazon-ssm-agent --no-pager || true
+systemctl is-active amazon-ssm-agent || true
