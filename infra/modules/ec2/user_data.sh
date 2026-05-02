@@ -32,6 +32,7 @@ done
 
 # Install Docker Compose plugin
 mkdir -p /usr/local/lib/docker/cli-plugins
+mkdir -p /opt/app
 
 # Download docker compose with retry
 for i in 1 2 3; do
@@ -48,7 +49,6 @@ if ! command -v aws >/dev/null 2>&1; then
   dnf install -y awscli
 fi
 
-mkdir -p /opt/app
 
 cat > /opt/app/docker-compose.yml << 'COMPOSE'
 services:

@@ -28,6 +28,11 @@ resource "aws_instance" "main" {
   vpc_security_group_ids = [var.security_group_id]
   iam_instance_profile   = var.instance_profile_name
 
+  root_block_device {
+    volume_size = 16
+    volume_type = "gp3"
+  }
+
   user_data = templatefile("${path.module}/user_data.sh", {
     aws_region      = var.aws_region
     account_id      = var.account_id
