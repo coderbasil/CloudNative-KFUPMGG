@@ -95,6 +95,25 @@ jobs:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/kfupm-geo-github-actions
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Wait for SSM agent to be online
+        run: |
+          INSTANCE_ID="${{ needs.build-push.outputs.instance_id }}"
+          echo "Waiting for SSM agent on $INSTANCE_ID..."
+          for i in $(seq 1 24); do
+            STATUS=$(aws ssm describe-instance-information \
+              --filters "Key=InstanceIds,Values=$INSTANCE_ID" \
+              --query 'InstanceInformationList[0].PingStatus' \
+              --output text 2>/dev/null)
+            if [ "$STATUS" = "Online" ]; then
+              echo "SSM agent is online."
+              exit 0
+            fi
+            echo "Not ready yet ($i/24), retrying in 15s..."
+            sleep 15
+          done
+          echo "SSM agent did not come online in time."
+          exit 1
+
       - name: Pull & restart containers via SSM
         run: |
           COMMAND_ID=$(aws ssm send-command \
