@@ -1,13 +1,25 @@
 #!/bin/bash
 set -xe
 
-# Add swap so OOM killer doesn't hit SSM agent during docker pulls
-fallocate -l 2G /swapfile
-chmod 600 /swapfile
-mkswap /swapfile
-swapon /swapfile
-echo '/swapfile none swap sw 0 0' >> /etc/fstab
+# Ensure SSM agent is installed and running before heavy Docker work
+dnf install -y amazon-ssm-agent || true
+systemctl enable --now amazon-ssm-agent || true
+systemctl restart amazon-ssm-agent || true
 
+# Add swap so OOM killer doesn't hit SSM agent during docker pulls
+if [ ! -f /swapfile ]; then
+  fallocate -l 2G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile
+fi
+
+swapon /swapfile || true
+
+if ! grep -q '^/swapfile ' /etc/fstab; then
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
+# Install and start Docker
 dnf install -y docker
 systemctl enable --now docker
 
@@ -18,6 +30,7 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
+# Install Docker Compose plugin
 mkdir -p /usr/local/lib/docker/cli-plugins
 
 # Download docker compose with retry
@@ -29,6 +42,11 @@ for i in 1 2 3; do
 done
 
 chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+# Install AWS CLI if not already available
+if ! command -v aws >/dev/null 2>&1; then
+  dnf install -y awscli
+fi
 
 mkdir -p /opt/app
 
@@ -62,6 +80,7 @@ cat > /opt/app/ecr-login.sh << 'SCRIPT'
 aws ecr get-login-password --region ${aws_region} | \
   docker login --username AWS --password-stdin ${account_id}.dkr.ecr.${aws_region}.amazonaws.com
 SCRIPT
+
 chmod +x /opt/app/ecr-login.sh
 
 cd /opt/app
@@ -73,5 +92,10 @@ for i in 1 2 3; do
   sleep 10
 done
 
+# Pull and start containers
 docker compose pull
 docker compose up -d
+
+# Make sure SSM agent is still running after Docker pulls
+systemctl restart amazon-ssm-agent || true
+systemctl status amazon-ssm-agent --no-pager || true
