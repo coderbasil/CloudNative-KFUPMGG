@@ -70,8 +70,13 @@ jobs:
           terraform_version: 1.7.0
           terraform_wrapper: false
 
+      - name: Install Lambda dependencies
+        run: |
+          cd infra/lambdas/game && npm ci
+          cd ../upload && npm ci
+
       - name: Terraform init & apply
-        run: terraform init && terraform apply -auto-approve -var="db_password=${{ secrets.TF_VAR_db_password }}"
+        run: terraform init && terraform apply -auto-approve -var="db_password=${{ secrets.TF_VAR_db_password }}" -var="jwt_secret=${{ secrets.JWT_SECRET }}"
         working-directory: infra
 
       - name: Get instance ID

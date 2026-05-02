@@ -41,7 +41,7 @@ export default function GamePage() {
     setIsLoading(true);
     setError(null);
     const qs = excludeIds.length ? `?exclude=${excludeIds.join(",")}` : "";
-    fetch(`/api/photos/random${qs}`, signal ? { signal } : {})
+    fetch(`/api/game/random${qs}`, signal ? { signal } : {})
       .then((res) => {
         if (res.status === 404) {
           setStage("final");

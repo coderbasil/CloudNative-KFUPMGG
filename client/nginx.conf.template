@@ -1,0 +1,33 @@
+upstream lambda_backend {
+    server ${LAMBDA_API_HOST}:443;
+}
+
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location /api/game/ {
+        rewrite ^/api/game/(.*) /game/$1 break;
+        proxy_pass            https://lambda_backend;
+        proxy_ssl_server_name on;
+        proxy_set_header      Host ${LAMBDA_API_HOST};
+    }
+
+    location /api/upload/ {
+        rewrite ^/api/upload/(.*) /upload/$1 break;
+        proxy_pass            https://lambda_backend;
+        proxy_ssl_server_name on;
+        proxy_set_header      Host ${LAMBDA_API_HOST};
+    }
+
+    location /api/ {
+        proxy_pass       http://api:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location / {
+        try_files $uri /index.html;
+    }
+}

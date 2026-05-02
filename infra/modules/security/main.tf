@@ -27,6 +27,18 @@ resource "aws_security_group" "ec2" {
   }
 }
 
+resource "aws_security_group" "lambda" {
+  name   = "${var.project}-lambda-sg"
+  vpc_id = var.vpc_id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 resource "aws_security_group" "rds" {
   name   = "${var.project}-rds-sg"
   vpc_id = var.vpc_id
@@ -35,9 +47,10 @@ resource "aws_security_group" "rds" {
     from_port       = 3306
     to_port         = 3306
     protocol        = "tcp"
-    security_groups = [aws_security_group.ec2.id]
+    security_groups = [aws_security_group.ec2.id, aws_security_group.lambda.id]
   }
 }
 
-output "ec2_sg_id" { value = aws_security_group.ec2.id }
-output "rds_sg_id" { value = aws_security_group.rds.id }
+output "ec2_sg_id"    { value = aws_security_group.ec2.id }
+output "rds_sg_id"    { value = aws_security_group.rds.id }
+output "lambda_sg_id" { value = aws_security_group.lambda.id }

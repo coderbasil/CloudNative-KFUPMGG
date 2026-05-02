@@ -22,11 +22,14 @@ services:
       DB_NAME: ${db_name}
       AWS_REGION: ${aws_region}
       AWS_BUCKET: ${aws_bucket}
+      JWT_SECRET: ${jwt_secret}
       PORT: "5000"
     restart: unless-stopped
 
   frontend:
     image: ${account_id}.dkr.ecr.${aws_region}.amazonaws.com/${project}-frontend:latest
+    environment:
+      LAMBDA_API_HOST: ${lambda_api_host}
     ports:
       - "80:80"
     depends_on:

@@ -1,40 +1,7 @@
 import { Router } from "express";
-import { getRandomPhoto, createPhoto, getAllPhotos, updatePhotoStatus, updatePhotoCoords, getApprovedPhotoCount } from "../models/Photo.js";
+import { createPhoto, getAllPhotos, updatePhotoStatus, updatePhotoCoords } from "../models/Photo.js";
 
 const router = Router();
-
-router.get("/count", async (_req, res) => {
-  try {
-    const total = await getApprovedPhotoCount();
-    res.json({ total });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-router.get("/random", async (req, res) => {
-  try {
-    const excludeIds = req.query.exclude
-      ? req.query.exclude.split(",").map(Number).filter(Boolean)
-      : [];
-    const [photo, total] = await Promise.all([
-      getRandomPhoto(excludeIds),
-      getApprovedPhotoCount(),
-    ]);
-    if (!photo) return res.status(404).json({ error: "No photos found" });
-
-    res.json({
-      id: photo.id,
-      url: photo.url,
-      coord: { x: photo.coord_x, y: photo.coord_y },
-      total,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
 
 router.get("/", async (_req, res) => {
   try {

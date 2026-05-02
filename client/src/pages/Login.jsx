@@ -27,7 +27,7 @@ function Login() {
       });
       const data = await res.json();
       if (!res.ok) return setMessage({ type: "error", text: data.message || "Error logging in" });
-      localStorage.setItem("kfupm_user", JSON.stringify({ role: data.role, email }));
+      localStorage.setItem("kfupm_user", JSON.stringify({ role: data.role, email, token: data.token }));
       redirectByRole(data.role);
     } catch {
       setMessage({ type: "error", text: "Network error, please try again" });

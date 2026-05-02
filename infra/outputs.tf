@@ -13,3 +13,7 @@ output "api_ecr_url" {
 output "frontend_ecr_url" {
   value = module.ecr.frontend_repo_url
 }
+
+output "api_gateway_url" {
+  value = module.lambda.api_gateway_url
+}

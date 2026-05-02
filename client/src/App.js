@@ -4,6 +4,7 @@ import GamePage from "./pages/GamePage";
 import Leaderboard from "./pages/Leaderboard";
 import PhotographerPage from "./pages/Photographer";
 import Login from "./pages/Login";
+import AdminPage from "./pages/Admin";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 const App = () => {
@@ -31,6 +32,7 @@ const App = () => {
         <Route path="/gamepage" element={<GamePage />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/photographer" element={<PhotographerPage />} />
+        <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </Router>
   );

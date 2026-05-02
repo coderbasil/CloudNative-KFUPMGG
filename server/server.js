@@ -2,28 +2,21 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import mysql from "mysql2/promise";
-import { mkdirSync } from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 import pool from "./db.js";
 import photos from "./routes/photos.js";
-import upload from "./routes/upload.js";
 import auth from "./routes/auth.js";
+import admins from "./routes/admins.js";
 dotenv.config();
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-mkdirSync(path.join(__dirname, "uploads"), { recursive: true });
 
 const app = express();
 const PORT = 5000;
 
 app.use(cors({ origin: "http://localhost:3000" }));
 app.use(express.json());
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api/photos", photos);
-app.use("/api/upload", upload);
 app.use("/api/auth", auth);
+app.use("/api/admins", admins);
 
 async function ensureDatabase() {
   const conn = await mysql.createConnection({
@@ -77,4 +70,3 @@ async function initDb() {
     process.exit(1);
   }
 })();
-// aaaaaaa

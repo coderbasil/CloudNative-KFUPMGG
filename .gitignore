@@ -93,3 +93,8 @@ infra/.terraform/
 infra/.terraform.lock.hcl
 infra/terraform.tfstate
 infra/terraform.tfstate.backup
+
+# ---- Lambda build artifacts ----
+infra/lambdas/game/node_modules/
+infra/lambdas/upload/node_modules/
+infra/modules/lambda/*.zip

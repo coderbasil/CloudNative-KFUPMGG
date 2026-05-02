@@ -9,6 +9,8 @@ variable "db_name" {}
 variable "db_username" {}
 variable "db_password" { sensitive = true }
 variable "aws_bucket" {}
+variable "lambda_api_host" {}
+variable "jwt_secret" { sensitive = true }
 
 data "aws_ami" "al2023" {
   most_recent = true
@@ -33,8 +35,10 @@ resource "aws_instance" "main" {
     db_host     = var.db_host
     db_name     = var.db_name
     db_username = var.db_username
-    db_password = var.db_password
-    aws_bucket  = var.aws_bucket
+    db_password     = var.db_password
+    aws_bucket      = var.aws_bucket
+    lambda_api_host = var.lambda_api_host
+    jwt_secret      = var.jwt_secret
   }))
 
   tags = { Name = "${var.project}-server" }

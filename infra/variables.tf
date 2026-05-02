@@ -21,3 +21,7 @@ variable "db_password" {
 variable "aws_bucket" {
   default = "kfupm-geoguesser"
 }
+
+variable "jwt_secret" {
+  sensitive = true
+}

@@ -1,0 +1,262 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: "Poppins", sans-serif; }
+
+/* ── Layout ──────────────────────────────────────────────────── */
+.admin-page {
+  min-height: 100vh;
+  background: #0a0d12;
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 2rem;
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.admin-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.admin-logo {
+  height: 38px;
+}
+
+.admin-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.admin-logout {
+  padding: 0.45rem 1.1rem;
+  background: transparent;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.65);
+  font-size: 0.85rem;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.admin-logout:hover {
+  border-color: #e53e3e;
+  color: #fc8181;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────── */
+.admin-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 0 2rem;
+  background: rgba(255,255,255,0.02);
+}
+
+.admin-tab {
+  padding: 0.85rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: rgba(255,255,255,0.45);
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  margin-bottom: -1px;
+}
+
+.admin-tab:hover { color: rgba(255,255,255,0.8); }
+
+.admin-tab.active {
+  color: #00c96b;
+  border-bottom-color: #00c96b;
+}
+
+/* ── Content ─────────────────────────────────────────────────── */
+.admin-content {
+  flex: 1;
+  padding: 2rem;
+  overflow: auto;
+}
+
+.admin-loading {
+  color: rgba(255,255,255,0.4);
+  padding: 2rem 0;
+  text-align: center;
+}
+
+/* ── Table ───────────────────────────────────────────────────── */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.admin-table th {
+  text-align: left;
+  padding: 0.85rem 1rem;
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.4);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+.admin-table td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.8);
+  vertical-align: middle;
+}
+
+.admin-table tr:last-child td { border-bottom: none; }
+
+.admin-table tr:hover td { background: rgba(255,255,255,0.025); }
+
+/* ── Thumb ───────────────────────────────────────────────────── */
+.admin-thumb {
+  width: 64px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+}
+
+/* ── Badges ──────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-approved  { background: rgba(0,201,107,0.15); color: #69f0ae; }
+.badge-rejected  { background: rgba(229,62,62,0.15);  color: #fc8181; }
+.badge-pending   { background: rgba(237,137,54,0.15); color: #f6ad55; }
+
+.badge-role-admin        { background: rgba(159,122,234,0.15); color: #b794f4; }
+.badge-role-photographer { background: rgba(66,153,225,0.15);  color: #90cdf4; }
+.badge-role-player       { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); }
+
+/* ── Row action buttons ──────────────────────────────────────── */
+.row-actions { display: flex; gap: 0.5rem; }
+
+.btn-approve, .btn-reject, .btn-delete {
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+}
+
+.btn-approve { background: rgba(0,201,107,0.2); color: #69f0ae; }
+.btn-approve:hover:not(:disabled) { background: rgba(0,201,107,0.35); }
+
+.btn-reject  { background: rgba(229,62,62,0.2);  color: #fc8181; }
+.btn-reject:hover:not(:disabled)  { background: rgba(229,62,62,0.35); }
+
+.btn-delete  { background: rgba(229,62,62,0.15); color: #fc8181; }
+.btn-delete:hover { background: rgba(229,62,62,0.3); }
+
+.btn-approve:disabled, .btn-reject:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ── Create user form ────────────────────────────────────────── */
+.users-section { display: flex; flex-direction: column; gap: 1.75rem; }
+
+.create-user-form {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.create-user-form h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.8);
+  margin-bottom: 1rem;
+}
+
+.create-user-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.create-user-fields input,
+.create-user-fields select {
+  padding: 0.65rem 0.9rem;
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.875rem;
+  font-family: "Poppins", sans-serif;
+  flex: 1;
+  min-width: 140px;
+  transition: border-color 0.2s;
+}
+
+.create-user-fields input::placeholder { color: rgba(255,255,255,0.25); }
+.create-user-fields input:focus,
+.create-user-fields select:focus {
+  outline: none;
+  border-color: #00c96b;
+}
+
+.create-user-fields select option { background: #1a202c; }
+
+.btn-create {
+  padding: 0.65rem 1.4rem;
+  background: #00693a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.btn-create:hover { background: #00a85a; }
+
+.user-msg {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 6px;
+}
+
+.user-msg.ok { background: rgba(0,201,107,0.12); color: #69f0ae; }
+.user-msg.err { background: rgba(229,62,62,0.12); color: #fc8181; }

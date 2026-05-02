@@ -46,44 +46,43 @@ const PhotographerPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.photo) {
-      setSubmitStatus({
-        ok: false,
-        message: "Please select a photo to upload.",
-      });
+      setSubmitStatus({ ok: false, message: "Please select a photo to upload." });
       return;
     }
     if (!formData.coordinates) {
-      setSubmitStatus({
-        ok: false,
-        message: "Please select a location on the map.",
-      });
+      setSubmitStatus({ ok: false, message: "Please select a location on the map." });
       return;
     }
 
-    const fd = new FormData();
-    fd.append("photo", formData.photo);
-    fd.append("difficulty", formData.difficulty);
-    fd.append("locationName", formData.locationName);
-    fd.append("x", formData.coordinates.x);
-    fd.append("y", formData.coordinates.y);
-    fd.append("photographer", userEmail);
-
     try {
-      const res = await fetch("/api/upload/photos", {
+      // Step 1: get presigned S3 URL and save DB record
+      const presignRes = await fetch("/api/upload/presign", {
         method: "POST",
-        body: fd,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: formData.photo.name,
+          contentType: formData.photo.type || "image/jpeg",
+          difficulty: formData.difficulty,
+          locationName: formData.locationName,
+          x: formData.coordinates.x,
+          y: formData.coordinates.y,
+          photographer: userEmail,
+        }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
+      const presignData = await presignRes.json();
+      if (!presignRes.ok) throw new Error(presignData.error || "Failed to get upload URL");
+
+      // Step 2: upload directly to S3
+      const s3Res = await fetch(presignData.uploadUrl, {
+        method: "PUT",
+        body: formData.photo,
+        headers: { "Content-Type": formData.photo.type || "image/jpeg" },
+      });
+      if (!s3Res.ok) throw new Error("Upload to S3 failed");
 
       setSubmitStatus({ ok: true, message: "Photo submitted successfully!" });
-      setFormData({
-        photo: null,
-        difficulty: "Easy",
-        locationName: "",
-        coordinates: null,
-      });
-      setSubmissions((prev) => [data, ...prev]);
+      setFormData({ photo: null, difficulty: "Easy", locationName: "", coordinates: null });
+      setSubmissions((prev) => [presignData.photo, ...prev]);
     } catch (err) {
       setSubmitStatus({ ok: false, message: err.message });
     }
