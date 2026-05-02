@@ -1,6 +1,13 @@
 #!/bin/bash
 set -xe
 
+# Add swap so OOM killer doesn't hit SSM agent during docker pulls
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+
 dnf install -y docker
 systemctl enable --now docker
 

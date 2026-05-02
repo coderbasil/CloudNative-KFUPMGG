@@ -45,9 +45,13 @@ resource "aws_instance" "main" {
 }
 
 resource "aws_eip" "main" {
-  instance = aws_instance.main.id
-  domain   = "vpc"
-  tags     = { Name = "${var.project}-eip" }
+  domain = "vpc"
+  tags   = { Name = "${var.project}-eip" }
+}
+
+resource "aws_eip_association" "main" {
+  instance_id   = aws_instance.main.id
+  allocation_id = aws_eip.main.id
 }
 
 output "public_ip"   { value = aws_eip.main.public_ip }
