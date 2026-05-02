@@ -28,18 +28,20 @@ resource "aws_instance" "main" {
   vpc_security_group_ids = [var.security_group_id]
   iam_instance_profile   = var.instance_profile_name
 
-  user_data = base64encode(templatefile("${path.module}/user_data.sh", {
-    aws_region  = var.aws_region
-    account_id  = var.account_id
-    project     = var.project
-    db_host     = var.db_host
-    db_name     = var.db_name
-    db_username = var.db_username
+  user_data = templatefile("${path.module}/user_data.sh", {
+    aws_region      = var.aws_region
+    account_id      = var.account_id
+    project         = var.project
+    db_host         = var.db_host
+    db_name         = var.db_name
+    db_username     = var.db_username
     db_password     = var.db_password
     aws_bucket      = var.aws_bucket
     lambda_api_host = var.lambda_api_host
     jwt_secret      = var.jwt_secret
-  }))
+  })
+
+  user_data_replace_on_change = true
 
   tags = { Name = "${var.project}-server" }
 }

@@ -49,18 +49,18 @@ module "rds" {
 }
 
 module "lambda" {
-  source          = "./modules/lambda"
-  project         = var.project
-  aws_region      = var.aws_region
-  account_id      = data.aws_caller_identity.current.account_id
-  vpc_id          = module.networking.vpc_id
-  subnet_ids      = module.networking.public_subnet_ids
-  lambda_sg_id    = module.security.lambda_sg_id
-  db_host         = module.rds.endpoint
-  db_name         = var.db_name
-  db_username     = var.db_username
-  db_password     = var.db_password
-  aws_bucket      = var.aws_bucket
+  source       = "./modules/lambda"
+  project      = var.project
+  aws_region   = var.aws_region
+  account_id   = data.aws_caller_identity.current.account_id
+  vpc_id       = module.networking.vpc_id
+  subnet_ids   = module.networking.public_subnet_ids
+  lambda_sg_id = module.security.lambda_sg_id
+  db_host      = module.rds.endpoint
+  db_name      = var.db_name
+  db_username  = var.db_username
+  db_password  = var.db_password
+  aws_bucket   = var.aws_bucket
 }
 
 module "ec2" {
