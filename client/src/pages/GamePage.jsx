@@ -99,6 +99,7 @@ export default function GamePage() {
     fetchGamePhotos(ac.signal);
 
     return () => ac.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useLayoutEffect(() => {
