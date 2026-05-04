@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { api } from "../api";
 import "../pages-css/Login.css";
 
 function Login() {
@@ -20,7 +21,7 @@ function Login() {
     setIsLoading(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(api("/api/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -41,7 +42,7 @@ function Login() {
     setIsLoading(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch(api("/api/auth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

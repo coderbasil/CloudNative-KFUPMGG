@@ -9,8 +9,8 @@ variable "db_name" {}
 variable "db_username" {}
 variable "db_password" { sensitive = true }
 variable "aws_bucket" {}
-variable "lambda_api_host" {}
 variable "jwt_secret" { sensitive = true }
+variable "frontend_url" {}
 
 data "aws_ami" "al2023" {
   most_recent = true
@@ -34,16 +34,16 @@ resource "aws_instance" "main" {
   }
 
   user_data = templatefile("${path.module}/user_data.sh", {
-    aws_region      = var.aws_region
-    account_id      = var.account_id
-    project         = var.project
-    db_host         = var.db_host
-    db_name         = var.db_name
-    db_username     = var.db_username
-    db_password     = var.db_password
-    aws_bucket      = var.aws_bucket
-    lambda_api_host = var.lambda_api_host
-    jwt_secret      = var.jwt_secret
+    aws_region   = var.aws_region
+    account_id   = var.account_id
+    project      = var.project
+    db_host      = var.db_host
+    db_name      = var.db_name
+    db_username  = var.db_username
+    db_password  = var.db_password
+    aws_bucket   = var.aws_bucket
+    jwt_secret   = var.jwt_secret
+    frontend_url = var.frontend_url
   })
 
   user_data_replace_on_change = true
@@ -62,4 +62,5 @@ resource "aws_eip_association" "main" {
 }
 
 output "public_ip"   { value = aws_eip.main.public_ip }
+output "public_dns"  { value = "ec2-${replace(aws_eip.main.public_ip, ".", "-")}.${var.aws_region}.compute.amazonaws.com" }
 output "instance_id" { value = aws_instance.main.id }

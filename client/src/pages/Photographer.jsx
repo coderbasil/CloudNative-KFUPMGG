@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useLayoutEffect } from "react";
+import { api } from "../api";
 import "../pages-css/Photographer.css";
 
 const PhotographerPage = () => {
@@ -31,7 +32,7 @@ const PhotographerPage = () => {
   })();
 
   useEffect(() => {
-    fetch("/api/photos")
+    fetch(api("/api/photos"))
       .then((res) => res.json())
       .then((data) => {
         const myPhotos = userEmail
@@ -56,7 +57,7 @@ const PhotographerPage = () => {
 
     try {
       // Step 1: get presigned S3 URL and save DB record
-      const presignRes = await fetch("/api/upload/presign", {
+      const presignRes = await fetch(api("/api/upload/presign"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { api } from "../api";
 import "../pages-css/Admin.css";
 
 export default function AdminPage() {
@@ -30,7 +31,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!token) return;
-    fetch("/api/photos")
+    fetch(api("/api/photos"))
       .then((r) => r.json())
       .then(setPhotos)
       .catch(() => {})
@@ -40,7 +41,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (tab !== "users" || !token) return;
     setUsersLoading(true);
-    fetch("/api/admins", { headers: { Authorization: `Bearer ${token}` } })
+    fetch(api("/api/admins"), { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then(setUsers)
       .catch(() => {})
@@ -48,7 +49,7 @@ export default function AdminPage() {
   }, [tab, token]);
 
   const updateStatus = (id, status) => {
-    fetch(`/api/photos/${id}/status`, {
+    fetch(api(`/api/photos/${id}/status`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -57,7 +58,7 @@ export default function AdminPage() {
   };
 
   const deleteUser = (id) => {
-    fetch(`/api/admins/${id}`, {
+    fetch(api(`/api/admins/${id}`), {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -68,7 +69,7 @@ export default function AdminPage() {
     e.preventDefault();
     setUserMsg(null);
     try {
-      const res = await fetch("/api/admins", {
+      const res = await fetch(api("/api/admins"), {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(newUser),

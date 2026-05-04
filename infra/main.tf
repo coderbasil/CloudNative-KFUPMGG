@@ -63,6 +63,13 @@ module "lambda" {
   aws_bucket   = var.aws_bucket
 }
 
+module "frontend" {
+  source          = "./modules/frontend"
+  project         = var.project
+  ec2_public_dns  = module.ec2.public_dns
+  api_gateway_url = module.lambda.api_gateway_url
+}
+
 module "ec2" {
   source                = "./modules/ec2"
   project               = var.project
@@ -76,6 +83,6 @@ module "ec2" {
   db_username           = var.db_username
   db_password           = var.db_password
   aws_bucket            = var.aws_bucket
-  lambda_api_host       = module.lambda.api_gateway_host
   jwt_secret            = var.jwt_secret
+  frontend_url          = var.frontend_url
 }

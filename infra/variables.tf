@@ -16,6 +16,10 @@ variable "db_username" {
 
 variable "db_password" {
   sensitive = true
+  validation {
+    condition     = !can(regex("[/@\" ]", var.db_password))
+    error_message = "db_password must not contain '/', '@', '\"', or spaces (RDS constraint)."
+  }
 }
 
 variable "aws_bucket" {
@@ -24,4 +28,9 @@ variable "aws_bucket" {
 
 variable "jwt_secret" {
   sensitive = true
+}
+
+variable "frontend_url" {
+  default     = "*"
+  description = "CloudFront domain to allow in CORS. Set to 'https://<dist>.cloudfront.net' after first deploy."
 }
