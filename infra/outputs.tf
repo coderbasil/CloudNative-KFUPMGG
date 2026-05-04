@@ -21,3 +21,8 @@ output "api_gateway_url" {
 output "ec2_instance_id" {
   value = module.ec2.instance_id
 }
+
+output "acm_validation_records" {
+  value       = module.frontend.acm_validation_records
+  description = "Add these CNAME records to Cloudflare to validate the SSL certificate."
+}

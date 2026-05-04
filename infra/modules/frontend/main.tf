@@ -1,10 +1,38 @@
+terraform {
+  required_providers {
+    aws = {
+      source                = "hashicorp/aws"
+      configuration_aliases = [aws.us_east_1]
+    }
+  }
+}
+
 variable "project" {}
 variable "ec2_public_dns" {}
 variable "api_gateway_url" {}
+variable "domain_name" { default = "" }
 
 locals {
-  bucket_name = "${var.project}-frontend"
-  api_gw_host = trimsuffix(replace(var.api_gateway_url, "https://", ""), "/")
+  bucket_name    = "${var.project}-frontend"
+  api_gw_host    = trimsuffix(replace(var.api_gateway_url, "https://", ""), "/")
+  has_domain     = var.domain_name != ""
+}
+
+# ─── ACM Certificate (us-east-1 — required for CloudFront) ───────────────────
+
+resource "aws_acm_certificate" "frontend" {
+  count                     = local.has_domain ? 1 : 0
+  provider                  = aws.us_east_1
+  domain_name               = var.domain_name
+  subject_alternative_names = ["www.${var.domain_name}"]
+  validation_method         = "DNS"
+  lifecycle { create_before_destroy = true }
+}
+
+resource "aws_acm_certificate_validation" "frontend" {
+  count           = local.has_domain ? 1 : 0
+  provider        = aws.us_east_1
+  certificate_arn = aws_acm_certificate.frontend[0].arn
 }
 
 # ─── S3 ───────────────────────────────────────────────────────────────────────
@@ -35,9 +63,12 @@ resource "aws_cloudfront_origin_access_control" "frontend" {
 # ─── CloudFront Distribution ──────────────────────────────────────────────────
 
 resource "aws_cloudfront_distribution" "frontend" {
+  depends_on = [aws_acm_certificate_validation.frontend]
+
   enabled             = true
   default_root_object = "index.html"
   price_class         = "PriceClass_100"
+  aliases             = local.has_domain ? [var.domain_name, "www.${var.domain_name}"] : []
 
   # Origin 1: S3 — static React build
   origin {
@@ -112,7 +143,6 @@ resource "aws_cloudfront_distribution" "frontend" {
     cache_policy_id        = "658327ea-f89d-4fab-a63d-7e88639e58f6" # CachingOptimized
   }
 
-  # SPA routing — return index.html on 403/404 from S3
   custom_error_response {
     error_code         = 403
     response_code      = 200
@@ -130,11 +160,14 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    cloudfront_default_certificate = !local.has_domain
+    acm_certificate_arn            = local.has_domain ? aws_acm_certificate.frontend[0].arn : null
+    ssl_support_method             = local.has_domain ? "sni-only" : null
+    minimum_protocol_version       = local.has_domain ? "TLSv1.2_2021" : null
   }
 }
 
-# ─── S3 Bucket Policy (allow CloudFront OAC only) ─────────────────────────────
+# ─── S3 Bucket Policy ─────────────────────────────────────────────────────────
 
 resource "aws_s3_bucket_policy" "frontend" {
   bucket = aws_s3_bucket.frontend.id
@@ -157,3 +190,14 @@ resource "aws_s3_bucket_policy" "frontend" {
 output "bucket_name"         { value = aws_s3_bucket.frontend.bucket }
 output "distribution_id"     { value = aws_cloudfront_distribution.frontend.id }
 output "distribution_domain" { value = aws_cloudfront_distribution.frontend.domain_name }
+
+output "acm_validation_records" {
+  value = local.has_domain ? {
+    for dvo in aws_acm_certificate.frontend[0].domain_validation_options : dvo.domain_name => {
+      name  = dvo.resource_record_name
+      type  = dvo.resource_record_type
+      value = dvo.resource_record_value
+    }
+  } : {}
+  description = "Add these CNAME records to Cloudflare to validate the SSL certificate."
+}

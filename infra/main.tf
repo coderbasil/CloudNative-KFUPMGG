@@ -12,6 +12,11 @@ provider "aws" {
   region = var.aws_region
 }
 
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+}
+
 data "aws_caller_identity" "current" {}
 
 module "networking" {
@@ -68,6 +73,12 @@ module "frontend" {
   project         = var.project
   ec2_public_dns  = module.ec2.public_dns
   api_gateway_url = module.lambda.api_gateway_url
+  domain_name     = var.domain_name
+
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
 }
 
 module "ec2" {
