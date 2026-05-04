@@ -58,15 +58,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build & push frontend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./client
-          push: true
-          tags: ${{ steps.ecr-login.outputs.registry }}/kfupm-geo-frontend:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.7.0
@@ -87,7 +78,7 @@ jobs:
 
       - name: Get instance ID
         id: tf-output
-        run: echo "instance_id=$(terraform output -raw instance_id)" >> "$GITHUB_OUTPUT"
+        run: echo "instance_id=$(terraform output -raw ec2_instance_id)" >> "$GITHUB_OUTPUT"
         working-directory: infra
 
   deploy:
