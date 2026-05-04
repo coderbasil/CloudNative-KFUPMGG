@@ -156,13 +156,13 @@ resource "aws_apigatewayv2_integration" "upload" {
 
 resource "aws_apigatewayv2_route" "game_random" {
   api_id    = aws_apigatewayv2_api.main.id
-  route_key = "GET /game/random"
+  route_key = "GET /api/game/random"
   target    = "integrations/${aws_apigatewayv2_integration.game.id}"
 }
 
 resource "aws_apigatewayv2_route" "upload_presign" {
   api_id    = aws_apigatewayv2_api.main.id
-  route_key = "POST /upload/presign"
+  route_key = "POST /api/upload/presign"
   target    = "integrations/${aws_apigatewayv2_integration.upload.id}"
 }
 

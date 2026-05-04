@@ -10,43 +10,29 @@ const pool = mysql.createPool({
   idleTimeout: 60000,
 });
 
-export const handler = async (event) => {
+export const handler = async () => {
   try {
-    const qs = event.queryStringParameters || {};
-    const excludeIds = qs.exclude
-      ? qs.exclude.split(",").map(Number).filter(Boolean)
-      : [];
+    const [rows] = await pool.execute(
+      "SELECT id, url, coord_x, coord_y FROM photos WHERE status = 'Approved' ORDER BY RAND()"
+    );
 
-    const [photoRows] = excludeIds.length
-      ? await pool.execute(
-          `SELECT * FROM photos WHERE status = 'Approved' AND id NOT IN (${excludeIds.map(() => "?").join(",")}) ORDER BY RAND() LIMIT 1`,
-          excludeIds
-        )
-      : await pool.execute(
-          "SELECT * FROM photos WHERE status = 'Approved' ORDER BY RAND() LIMIT 1"
-        );
-
-    if (!photoRows[0]) {
+    if (!rows.length) {
       return {
         statusCode: 404,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ error: "No photos found" }),
+        body: JSON.stringify({ error: "No approved photos found" }),
       };
     }
 
-    const [countRows] = await pool.execute(
-      "SELECT COUNT(*) as count FROM photos WHERE status = 'Approved'"
-    );
-
-    const photo = photoRows[0];
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        id: photo.id,
-        url: photo.url,
-        coord: { x: photo.coord_x, y: photo.coord_y },
-        total: Number(countRows[0].count),
+        photos: rows.map((p) => ({
+          id: p.id,
+          url: p.url,
+          coord: { x: p.coord_x, y: p.coord_y },
+        })),
       }),
     };
   } catch (err) {
