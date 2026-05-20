@@ -119,7 +119,18 @@ resource "aws_cloudfront_distribution" "frontend" {
     origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac" # AllViewerExceptHostHeader
   }
 
-  # Behavior 3: /api/* → EC2 Express
+  # Behavior 3: /api/leaderboard* → Lambda (must be before the EC2 /api/* catch-all)
+  ordered_cache_behavior {
+    path_pattern             = "/api/leaderboard*"
+    target_origin_id         = "LambdaOrigin"
+    viewer_protocol_policy   = "redirect-to-https"
+    allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods           = ["GET", "HEAD"]
+    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # CachingDisabled
+    origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac" # AllViewerExceptHostHeader
+  }
+
+  # Behavior 4: /api/* → EC2 Express
   ordered_cache_behavior {
     path_pattern             = "/api/*"
     target_origin_id         = "EC2Origin"
