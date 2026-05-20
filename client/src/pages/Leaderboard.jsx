@@ -9,15 +9,25 @@ const Leaderboard = () => {
   const navigate = useNavigate();
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState("");
 
   useEffect(() => {
     fetch(api("/api/leaderboard"))
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          throw new Error(body.error || `Server error ${r.status}`);
+        }
+        return r.json();
+      })
       .then((data) => {
         setEntries(Array.isArray(data) ? data : []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        setFetchError(err.message || "Failed to load leaderboard");
+        setLoading(false);
+      });
   }, []);
 
   return (
@@ -27,11 +37,15 @@ const Leaderboard = () => {
 
         {loading && <p className="lb-empty">Loading…</p>}
 
-        {!loading && entries.length === 0 && (
+        {!loading && fetchError && (
+          <p className="lb-empty" style={{ color: "#ff6b6b" }}>{fetchError}</p>
+        )}
+
+        {!loading && !fetchError && entries.length === 0 && (
           <p className="lb-empty">No scores yet. Be the first!</p>
         )}
 
-        {!loading && entries.length > 0 && (
+        {!loading && !fetchError && entries.length > 0 && (
           <ol className="lb-list">
             {entries.map((entry, i) => (
               <li key={i} className={`lb-row rank-${i + 1}`}>

@@ -36,6 +36,7 @@ export default function GamePage() {
   const [playerName, setPlayerName] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const dragMovedRef = useRef(false);
   const containerRef = useRef(null);
@@ -353,9 +354,10 @@ export default function GamePage() {
   const handleSubmitScore = async () => {
     if (!playerName.trim() || submitting) return;
     setSubmitting(true);
+    setSubmitError("");
     const totalScore = allScores.reduce((a, b) => a + b, 0);
     try {
-      await fetch(api("/api/leaderboard"), {
+      const res = await fetch(api("/api/leaderboard"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -364,9 +366,14 @@ export default function GamePage() {
           rounds: allScores.length,
         }),
       });
-      setSubmitted(true);
-    } catch {
-      // silent fail — score is optional
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setSubmitError(body.error || `Server error ${res.status}`);
+      }
+    } catch (err) {
+      setSubmitError("Network error — could not reach server");
     } finally {
       setSubmitting(false);
     }
@@ -571,6 +578,11 @@ export default function GamePage() {
                 >
                   {submitting ? "Saving…" : "Save to Leaderboard"}
                 </button>
+                {submitError && (
+                  <p style={{ color: "#ff6b6b", fontSize: "0.8rem", marginTop: "0.4rem", textAlign: "center" }}>
+                    {submitError}
+                  </p>
+                )}
               </div>
             ) : (
               <p className="saved-msg">Score saved!</p>
