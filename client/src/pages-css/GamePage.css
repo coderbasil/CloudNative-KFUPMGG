@@ -173,16 +173,16 @@
   position: absolute;
   inset: 0;
   z-index: 1;
+  cursor: default;
 }
 
 .marker {
   position: absolute;
-  width: 28px;
-  height: 42px;
+  width: 48px;
+  height: 72px;
   transform: translate(-50%, -100%);
   pointer-events: none;
   z-index: 10;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
   overflow: visible;
 }
 
@@ -220,7 +220,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
   padding: 2.75rem 2.25rem;
-  width: min(380px, 88vw);
+  width: min(500px, 92vw);
   text-align: center;
   box-shadow: 0 28px 72px rgba(0, 0, 0, 0.6);
 }
@@ -247,6 +247,14 @@
   font-size: 1rem;
   color: rgba(255, 255, 255, 0.55);
   margin-bottom: 1.75rem;
+}
+
+.result-feedback-final {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 1.5rem;
+  line-height: 1.4;
 }
 
 .result-remaining {

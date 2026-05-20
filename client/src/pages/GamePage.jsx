@@ -505,20 +505,28 @@ export default function GamePage() {
             {guessPos && (
               <svg
                 className="marker"
+                width="48"
+                height="72"
+                viewBox="0 0 24 36"
                 style={{
                   left: guessPos.x * scale + offset.x,
                   top: guessPos.y * scale + offset.y,
                 }}
-                viewBox="0 0 24 36"
                 xmlns="http://www.w3.org/2000/svg"
               >
+                <defs>
+                  <filter id="pin-shadow" x="-30%" y="-10%" width="160%" height="140%">
+                    <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodOpacity="0.5" />
+                  </filter>
+                </defs>
                 <path
                   d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24C24 5.373 18.627 0 12 0z"
                   fill="#e74c3c"
                   stroke="white"
-                  strokeWidth="1.5"
+                  strokeWidth="1"
+                  filter="url(#pin-shadow)"
                 />
-                <circle cx="12" cy="12" r="4" fill="white" />
+                <circle cx="12" cy="11" r="4" fill="white" />
               </svg>
             )}
           </div>
@@ -603,10 +611,7 @@ export default function GamePage() {
               &mdash; avg {avgScore} / 100
             </p>
 
-            <p
-              className="result-feedback"
-              style={{ fontSize: "1.05rem", marginTop: "0.25rem" }}
-            >
+            <p className="result-feedback-final">
               {finalFeedback(
                 allScores.reduce((a, b) => a + b, 0),
                 allScores.length * 100,
