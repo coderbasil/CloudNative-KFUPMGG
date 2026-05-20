@@ -16,6 +16,9 @@ export default function AdminPage() {
   const [newUser, setNewUser] = useState({ username: "", email: "", password: "", type: "player" });
   const [userMsg, setUserMsg] = useState(null);
 
+  const [resetting, setResetting] = useState(false);
+  const [resetMsg, setResetMsg] = useState(null);
+
   useEffect(() => {
     try {
       const stored = JSON.parse(localStorage.getItem("kfupm_user") || "{}");
@@ -84,6 +87,23 @@ export default function AdminPage() {
     }
   };
 
+  const resetLeaderboard = async () => {
+    if (!window.confirm("Reset the entire leaderboard? This cannot be undone.")) return;
+    setResetting(true);
+    setResetMsg(null);
+    try {
+      const res = await fetch(api("/api/leaderboard"), {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setResetMsg(res.ok ? { ok: true, text: "Leaderboard cleared." } : { ok: false, text: "Failed to reset." });
+    } catch {
+      setResetMsg({ ok: false, text: "Network error." });
+    } finally {
+      setResetting(false);
+    }
+  };
+
   const statusBadge = (s) =>
     s === "Approved" ? "badge-approved" : s === "Rejected" ? "badge-rejected" : "badge-pending";
 
@@ -107,6 +127,9 @@ export default function AdminPage() {
         </button>
         <button className={`admin-tab ${tab === "users" ? "active" : ""}`} onClick={() => setTab("users")}>
           User Accounts
+        </button>
+        <button className={`admin-tab ${tab === "leaderboard" ? "active" : ""}`} onClick={() => setTab("leaderboard")}>
+          Leaderboard
         </button>
       </div>
 
@@ -235,6 +258,25 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
+            )}
+          </div>
+        )}
+
+        {tab === "leaderboard" && (
+          <div className="users-section">
+            <h3 style={{ color: "#fff", marginBottom: "1rem" }}>Leaderboard Management</h3>
+            <button
+              className="btn-delete"
+              style={{ padding: "0.6rem 1.5rem", fontSize: "0.95rem" }}
+              disabled={resetting}
+              onClick={resetLeaderboard}
+            >
+              {resetting ? "Resetting…" : "Reset Leaderboard"}
+            </button>
+            {resetMsg && (
+              <p className={`user-msg ${resetMsg.ok ? "ok" : "err"}`} style={{ marginTop: "0.75rem" }}>
+                {resetMsg.text}
+              </p>
             )}
           </div>
         )}

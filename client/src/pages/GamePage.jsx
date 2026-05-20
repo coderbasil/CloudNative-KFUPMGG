@@ -504,7 +504,7 @@ export default function GamePage() {
 
             {guessPos && (
               <svg
-                className="marker2"
+                className="marker"
                 width="48"
                 height="72"
                 viewBox="0 0 24 36"

@@ -37,6 +37,11 @@ async function handleLeaderboardGet() {
   return json(200, rows);
 }
 
+async function handleLeaderboardDelete() {
+  await pool.execute("DELETE FROM leaderboard");
+  return json(200, { message: "Leaderboard cleared" });
+}
+
 async function handleLeaderboardPost(event) {
   const body = JSON.parse(event.body || "{}");
   const name = String(body.player_name || "").trim().slice(0, 30);
@@ -57,8 +62,9 @@ export const handler = async (event) => {
   const path = event.rawPath ?? "";
   try {
     if (path === "/api/game/random" && method === "GET") return await handleGameRandom();
-    if (path === "/api/leaderboard" && method === "GET")  return await handleLeaderboardGet();
-    if (path === "/api/leaderboard" && method === "POST") return await handleLeaderboardPost(event);
+    if (path === "/api/leaderboard" && method === "GET")    return await handleLeaderboardGet();
+    if (path === "/api/leaderboard" && method === "POST")   return await handleLeaderboardPost(event);
+    if (path === "/api/leaderboard" && method === "DELETE") return await handleLeaderboardDelete();
     return json(404, { error: "Not found" });
   } catch (err) {
     console.error(err);
