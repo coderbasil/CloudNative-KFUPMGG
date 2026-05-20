@@ -46,9 +46,14 @@ resource "aws_instance" "main" {
     frontend_url = var.frontend_url
   })
 
-  user_data_replace_on_change = true
-
   tags = { Name = "${var.project}-server" }
+
+  # user_data and ami change whenever secrets or AMI versions differ between
+  # local and CI runs. Application updates flow through Docker image deploys,
+  # not user_data, so we ignore both to prevent accidental instance replacement.
+  lifecycle {
+    ignore_changes = [user_data, ami]
+  }
 }
 
 resource "aws_eip" "main" {
