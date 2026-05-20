@@ -31,6 +31,10 @@ resource "aws_db_instance" "main" {
   final_snapshot_identifier = "${var.project}-final-snapshot"
 
   tags = { Name = "${var.project}-mysql" }
+
+  lifecycle {
+    ignore_changes = [password]
+  }
 }
 
 output "endpoint" { value = aws_db_instance.main.address }

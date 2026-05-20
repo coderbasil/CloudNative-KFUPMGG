@@ -16,10 +16,6 @@ variable "db_username" {
 
 variable "db_password" {
   sensitive = true
-  validation {
-    condition     = !can(regex("[/@\" ]", var.db_password))
-    error_message = "db_password must not contain '/', '@', '\"', or spaces (RDS constraint)."
-  }
 }
 
 variable "aws_bucket" {

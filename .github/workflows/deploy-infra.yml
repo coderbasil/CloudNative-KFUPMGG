@@ -24,12 +24,6 @@ jobs:
         with:
           terraform_version: "~1.6"
 
-      - name: Install Lambda dependencies
-        run: |
-          npm ci --prefix infra/lambdas/game
-          npm ci --prefix infra/lambdas/upload
-          npm ci --prefix infra/lambdas/db-init
-
       - name: Terraform init
         run: terraform init
         working-directory: infra

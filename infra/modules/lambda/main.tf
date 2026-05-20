@@ -54,24 +54,59 @@ resource "aws_s3_bucket_cors_configuration" "photos" {
   }
 }
 
+# ─── npm install (runs locally before zipping) ────────────────────────────────
+
+resource "null_resource" "npm_game" {
+  triggers = {
+    package_json = filesha256("${path.root}/lambdas/game/package.json")
+  }
+  provisioner "local-exec" {
+    working_dir = "${path.root}/lambdas/game"
+    command     = "npm install"
+  }
+}
+
+resource "null_resource" "npm_upload" {
+  triggers = {
+    package_json = filesha256("${path.root}/lambdas/upload/package.json")
+  }
+  provisioner "local-exec" {
+    working_dir = "${path.root}/lambdas/upload"
+    command     = "npm install"
+  }
+}
+
+resource "null_resource" "npm_db_init" {
+  triggers = {
+    package_json = filesha256("${path.root}/lambdas/db-init/package.json")
+  }
+  provisioner "local-exec" {
+    working_dir = "${path.root}/lambdas/db-init"
+    command     = "npm install"
+  }
+}
+
 # ─── Lambda code archives ─────────────────────────────────────────────────────
 
 data "archive_file" "game" {
   type        = "zip"
   source_dir  = "${path.root}/lambdas/game"
   output_path = "${path.module}/game.zip"
+  depends_on  = [null_resource.npm_game]
 }
 
 data "archive_file" "upload" {
   type        = "zip"
   source_dir  = "${path.root}/lambdas/upload"
   output_path = "${path.module}/upload.zip"
+  depends_on  = [null_resource.npm_upload]
 }
 
 data "archive_file" "db_init" {
   type        = "zip"
   source_dir  = "${path.root}/lambdas/db-init"
   output_path = "${path.module}/db-init.zip"
+  depends_on  = [null_resource.npm_db_init]
 }
 
 # ─── Lambda Functions ─────────────────────────────────────────────────────────
