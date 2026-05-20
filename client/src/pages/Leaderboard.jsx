@@ -19,8 +19,6 @@ const Leaderboard = () => {
   }, []);
 
   const podiumName = (rank) => entries[rank - 1]?.player_name ?? "—";
-  const podiumScore = (rank) =>
-    entries[rank - 1] ? `${entries[rank - 1].score} pts` : "";
 
   return (
     <div className="background-page">
