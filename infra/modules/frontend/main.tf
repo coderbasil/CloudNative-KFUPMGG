@@ -29,11 +29,8 @@ resource "aws_acm_certificate" "frontend" {
   lifecycle { create_before_destroy = true }
 }
 
-resource "aws_acm_certificate_validation" "frontend" {
-  count           = local.has_domain ? 1 : 0
-  provider        = aws.us_east_1
-  certificate_arn = aws_acm_certificate.frontend[0].arn
-}
+# Validation is done manually in Cloudflare (add the CNAME from acm_validation_records output).
+# No aws_acm_certificate_validation resource so Terraform doesn't block waiting for DNS.
 
 # ─── S3 ───────────────────────────────────────────────────────────────────────
 
@@ -63,7 +60,6 @@ resource "aws_cloudfront_origin_access_control" "frontend" {
 # ─── CloudFront Distribution ──────────────────────────────────────────────────
 
 resource "aws_cloudfront_distribution" "frontend" {
-  depends_on = [aws_acm_certificate_validation.frontend]
 
   enabled             = true
   default_root_object = "index.html"

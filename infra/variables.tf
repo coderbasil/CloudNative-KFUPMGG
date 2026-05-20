@@ -32,6 +32,6 @@ variable "frontend_url" {
 }
 
 variable "domain_name" {
-  default     = ""
+  default     = "kfupmguessr.xyz"
   description = "Custom domain for the frontend (e.g. kfupmguessr.xyz). Leave empty to use the CloudFront domain only."
 }
