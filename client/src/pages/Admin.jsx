@@ -10,6 +10,7 @@ export default function AdminPage() {
 
   const [photos, setPhotos] = useState([]);
   const [photosLoading, setPhotosLoading] = useState(true);
+  const [photosError, setPhotosError] = useState(null);
 
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -35,9 +36,12 @@ export default function AdminPage() {
   useEffect(() => {
     if (!token) return;
     fetch(api("/api/photos"))
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Server error ${r.status}`);
+        return r.json();
+      })
       .then(setPhotos)
-      .catch(() => {})
+      .catch((err) => setPhotosError(err.message))
       .finally(() => setPhotosLoading(false));
   }, [token]);
 
@@ -136,7 +140,8 @@ export default function AdminPage() {
       <div className="admin-content">
 
         {tab === "photos" && (
-          photosLoading ? <p className="admin-loading">Loading…</p> : (
+          photosLoading ? <p className="admin-loading">Loading…</p> :
+          photosError ? <p className="admin-loading" style={{ color: "#ff6b7a" }}>Failed to load photos: {photosError}</p> : (
             <div className="table-wrap">
               <table className="admin-table">
                 <thead>
