@@ -68,6 +68,10 @@ jobs:
           cd infra/lambdas/game && npm ci
           cd ../upload && npm ci
 
+      - name: Build db-init Lambda
+        working-directory: infra/lambdas/db-init
+        run: npm install && npx esbuild index.mjs --bundle --platform=node --target=node20 --format=cjs --outfile=dist/index.js
+
       - name: Terraform init & apply
         run: |
           terraform init
