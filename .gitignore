@@ -98,4 +98,5 @@ infra/terraform.tfstate.backup
 infra/lambdas/game/node_modules/
 infra/lambdas/upload/node_modules/
 infra/lambdas/db-init/node_modules/
+infra/lambdas/db-init/dist/
 infra/modules/lambda/*.zip

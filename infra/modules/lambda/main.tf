@@ -76,13 +76,14 @@ resource "null_resource" "npm_upload" {
   }
 }
 
-resource "null_resource" "npm_db_init" {
+resource "null_resource" "build_db_init" {
   triggers = {
-    package_json = filesha256("${path.root}/lambdas/db-init/package.json")
+    source  = filesha256("${path.root}/lambdas/db-init/index.mjs")
+    package = filesha256("${path.root}/lambdas/db-init/package.json")
   }
   provisioner "local-exec" {
     working_dir = "${path.root}/lambdas/db-init"
-    command     = "npm install"
+    command     = "npm install && npx esbuild index.mjs --bundle --platform=node --target=node20 --format=cjs --outfile=dist/index.js"
   }
 }
 
@@ -104,9 +105,9 @@ data "archive_file" "upload" {
 
 data "archive_file" "db_init" {
   type        = "zip"
-  source_dir  = "${path.root}/lambdas/db-init"
+  source_dir  = "${path.root}/lambdas/db-init/dist"
   output_path = "${path.module}/db-init.zip"
-  depends_on  = [null_resource.npm_db_init]
+  depends_on  = [null_resource.build_db_init]
 }
 
 # ─── Lambda Functions ─────────────────────────────────────────────────────────
