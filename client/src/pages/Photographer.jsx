@@ -21,8 +21,10 @@ const PhotographerPage = () => {
     try {
       const stored = JSON.parse(localStorage.getItem("kfupm_user"))?.email;
       if (stored) return stored;
-    } catch { /* ignore */ }
-    // Fallback: generate a persistent anonymous ID so submissions are still trackable
+    } catch {
+      /* ignore */
+    }
+    // Fallback: agenerate a persistent anonymous ID so submissions are still trackable
     let anonId = localStorage.getItem("kfupm_anon_id");
     if (!anonId) {
       anonId = "anon-" + Math.random().toString(36).slice(2, 10);
@@ -47,11 +49,17 @@ const PhotographerPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.photo) {
-      setSubmitStatus({ ok: false, message: "Please select a photo to upload." });
+      setSubmitStatus({
+        ok: false,
+        message: "Please select a photo to upload.",
+      });
       return;
     }
     if (!formData.coordinates) {
-      setSubmitStatus({ ok: false, message: "Please select a location on the map." });
+      setSubmitStatus({
+        ok: false,
+        message: "Please select a location on the map.",
+      });
       return;
     }
 
@@ -71,7 +79,8 @@ const PhotographerPage = () => {
         }),
       });
       const presignData = await presignRes.json();
-      if (!presignRes.ok) throw new Error(presignData.error || "Failed to get upload URL");
+      if (!presignRes.ok)
+        throw new Error(presignData.error || "Failed to get upload URL");
 
       // Step 2: upload directly to S3
       const s3Res = await fetch(presignData.uploadUrl, {
@@ -82,7 +91,12 @@ const PhotographerPage = () => {
       if (!s3Res.ok) throw new Error("Upload to S3 failed");
 
       setSubmitStatus({ ok: true, message: "Photo submitted successfully!" });
-      setFormData({ photo: null, difficulty: "Easy", locationName: "", coordinates: null });
+      setFormData({
+        photo: null,
+        difficulty: "Easy",
+        locationName: "",
+        coordinates: null,
+      });
       setSubmissions((prev) => [presignData.photo, ...prev]);
     } catch (err) {
       setSubmitStatus({ ok: false, message: err.message });
@@ -108,13 +122,24 @@ const PhotographerPage = () => {
   const containerRef = useRef(null);
 
   useLayoutEffect(() => {
-    if (!showMapModal || !imageDimensions.width || !imageDimensions.height || !containerRef.current)
+    if (
+      !showMapModal ||
+      !imageDimensions.width ||
+      !imageDimensions.height ||
+      !containerRef.current
+    )
       return;
     const { clientWidth: cw, clientHeight: ch } = containerRef.current;
     if (!cw || !ch) return;
-    const fit = Math.min(cw / imageDimensions.width, ch / imageDimensions.height);
+    const fit = Math.min(
+      cw / imageDimensions.width,
+      ch / imageDimensions.height,
+    );
     setScale(fit);
-    setOffset({ x: (cw - imageDimensions.width * fit) / 2, y: (ch - imageDimensions.height * fit) / 2 });
+    setOffset({
+      x: (cw - imageDimensions.width * fit) / 2,
+      y: (ch - imageDimensions.height * fit) / 2,
+    });
   }, [showMapModal, imageDimensions]);
 
   useEffect(() => {
@@ -133,7 +158,12 @@ const PhotographerPage = () => {
   };
 
   const getFitScale = () => {
-    if (!imageDimensions.width || !imageDimensions.height || !containerRef.current) return 0.1;
+    if (
+      !imageDimensions.width ||
+      !imageDimensions.height ||
+      !containerRef.current
+    )
+      return 0.1;
     const { clientWidth: cw, clientHeight: ch } = containerRef.current;
     return Math.min(cw / imageDimensions.width, ch / imageDimensions.height);
   };
