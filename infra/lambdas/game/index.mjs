@@ -57,6 +57,30 @@ async function handleLeaderboardPost(event) {
   return json(201, { message: "Score saved" });
 }
 
+async function handlePhotosGet() {
+  const [rows] = await pool.execute(
+    "SELECT id, url, coord_x, coord_y, diff, location_name, photographer, status, created_at FROM photos ORDER BY created_at DESC"
+  );
+  return json(200, rows);
+}
+
+async function handlePhotosStatusPatch(event, id) {
+  const body = JSON.parse(event.body || "{}");
+  const { status } = body;
+  if (!["Approved", "Rejected", "Pending"].includes(status))
+    return json(400, { error: "Invalid status" });
+  await pool.execute("UPDATE photos SET status = ? WHERE id = ?", [status, id]);
+  return json(200, { message: "Status updated" });
+}
+
+async function handlePhotosCoordsPathch(event, id) {
+  const body = JSON.parse(event.body || "{}");
+  const { x, y } = body;
+  if (x == null || y == null) return json(400, { error: "x and y required" });
+  await pool.execute("UPDATE photos SET coord_x = ?, coord_y = ? WHERE id = ?", [x, y, id]);
+  return json(200, { message: "Coordinates updated" });
+}
+
 export const handler = async (event) => {
   const method = event.requestContext?.http?.method ?? "";
   const path = event.rawPath ?? "";
@@ -65,6 +89,14 @@ export const handler = async (event) => {
     if (path === "/api/leaderboard" && method === "GET")    return await handleLeaderboardGet();
     if (path === "/api/leaderboard" && method === "POST")   return await handleLeaderboardPost(event);
     if (path === "/api/leaderboard" && method === "DELETE") return await handleLeaderboardDelete();
+    if (path === "/api/photos"      && method === "GET")    return await handlePhotosGet();
+
+    const statusMatch = path.match(/^\/api\/photos\/(\d+)\/status$/);
+    if (statusMatch && method === "PATCH") return await handlePhotosStatusPatch(event, statusMatch[1]);
+
+    const coordsMatch = path.match(/^\/api\/photos\/(\d+)\/coords$/);
+    if (coordsMatch && method === "PATCH") return await handlePhotosCoordsPathch(event, coordsMatch[1]);
+
     return json(404, { error: "Not found" });
   } catch (err) {
     console.error(err);

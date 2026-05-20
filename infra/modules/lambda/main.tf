@@ -170,7 +170,7 @@ resource "aws_apigatewayv2_api" "main" {
   protocol_type = "HTTP"
   cors_configuration {
     allow_origins = ["*"]
-    allow_methods = ["GET", "POST", "OPTIONS"]
+    allow_methods = ["GET", "POST", "PATCH", "DELETE", "OPTIONS"]
     allow_headers = ["Content-Type", "Authorization"]
     max_age       = 300
   }
@@ -217,6 +217,24 @@ resource "aws_apigatewayv2_route" "leaderboard_post" {
 resource "aws_apigatewayv2_route" "leaderboard_delete" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "DELETE /api/leaderboard"
+  target    = "integrations/${aws_apigatewayv2_integration.game.id}"
+}
+
+resource "aws_apigatewayv2_route" "photos_get" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /api/photos"
+  target    = "integrations/${aws_apigatewayv2_integration.game.id}"
+}
+
+resource "aws_apigatewayv2_route" "photos_status_patch" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PATCH /api/photos/{id}/status"
+  target    = "integrations/${aws_apigatewayv2_integration.game.id}"
+}
+
+resource "aws_apigatewayv2_route" "photos_coords_patch" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PATCH /api/photos/{id}/coords"
   target    = "integrations/${aws_apigatewayv2_integration.game.id}"
 }
 
