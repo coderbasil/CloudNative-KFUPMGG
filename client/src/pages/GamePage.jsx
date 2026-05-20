@@ -1,4 +1,10 @@
-import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useRef,
+  useCallback,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import "../pages-css/GamePage.css";
@@ -243,7 +249,10 @@ export default function GamePage() {
       lastPinchDistRef.current = Math.hypot(dx, dy);
       lastTouchRef.current = null;
     } else if (e.touches.length === 1) {
-      lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      lastTouchRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
       lastPinchDistRef.current = null;
     }
   }, []);
@@ -255,7 +264,10 @@ export default function GamePage() {
       dragMovedRef.current = true;
       const t0 = e.touches[0];
       const t1 = e.touches[1];
-      const newDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+      const newDist = Math.hypot(
+        t1.clientX - t0.clientX,
+        t1.clientY - t0.clientY,
+      );
       const ratio = newDist / lastPinchDistRef.current;
       lastPinchDistRef.current = newDist;
 
@@ -285,7 +297,10 @@ export default function GamePage() {
       dragMovedRef.current = true;
       const dx = e.touches[0].clientX - lastTouchRef.current.x;
       const dy = e.touches[0].clientY - lastTouchRef.current.y;
-      lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      lastTouchRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
       const prev = offsetRef.current;
       setOffset({ x: prev.x + dx, y: prev.y + dy });
     }
@@ -300,15 +315,25 @@ export default function GamePage() {
       if (!dragMovedRef.current && e.changedTouches.length === 1) {
         const touch = e.changedTouches[0];
         const rect = containerRef.current.getBoundingClientRect();
-        const rawX = (touch.clientX - rect.left - offsetRef.current.x) / scaleRef.current;
-        const rawY = (touch.clientY - rect.top - offsetRef.current.y) / scaleRef.current;
-        if (rawX >= 0 && rawY >= 0 && rawX <= mapNatWRef.current && rawY <= mapNatHRef.current) {
+        const rawX =
+          (touch.clientX - rect.left - offsetRef.current.x) / scaleRef.current;
+        const rawY =
+          (touch.clientY - rect.top - offsetRef.current.y) / scaleRef.current;
+        if (
+          rawX >= 0 &&
+          rawY >= 0 &&
+          rawX <= mapNatWRef.current &&
+          rawY <= mapNatHRef.current
+        ) {
           setGuessPos({ x: Math.round(rawX), y: Math.round(rawY) });
         }
       }
       lastTouchRef.current = null;
     } else if (e.touches.length === 1) {
-      lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      lastTouchRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
     }
   }, []);
 
@@ -384,6 +409,14 @@ export default function GamePage() {
     if (s >= 70) return "Great guess!";
     if (s >= 40) return "Not bad!";
     return "Keep practicing!";
+  };
+
+  const finalFeedback = (total, maxTotal) => {
+    const pct = total / maxTotal;
+    if (pct === 1) return "🏆 شكلك حافظ أماكن الأفياش والمكيفات بعد";
+    if (pct >= 0.5) return "👀 شيبه بس باقي ما شفت كل شي";
+    if (pct >= 0.1) return "😂 يا اوريااااااااااااا";
+    return "💀 أنت متأكد إنك تدرس في الجامعة هذي؟";
   };
 
   if (isLoading) {
@@ -470,13 +503,23 @@ export default function GamePage() {
             <div className="map-click-layer" onClick={handleMapClick} />
 
             {guessPos && (
-              <div
+              <svg
                 className="marker"
                 style={{
                   left: guessPos.x * scale + offset.x,
                   top: guessPos.y * scale + offset.y,
                 }}
-              />
+                viewBox="0 0 24 36"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24C24 5.373 18.627 0 12 0z"
+                  fill="#e74c3c"
+                  stroke="white"
+                  strokeWidth="1.5"
+                />
+                <circle cx="12" cy="12" r="4" fill="white" />
+              </svg>
             )}
           </div>
 
@@ -556,7 +599,18 @@ export default function GamePage() {
             </div>
 
             <p className="result-feedback">
-              {allScores.length} round{allScores.length !== 1 ? "s" : ""} &mdash; avg {avgScore} / 100
+              {allScores.length} round{allScores.length !== 1 ? "s" : ""}{" "}
+              &mdash; avg {avgScore} / 100
+            </p>
+
+            <p
+              className="result-feedback"
+              style={{ fontSize: "1.05rem", marginTop: "0.25rem" }}
+            >
+              {finalFeedback(
+                allScores.reduce((a, b) => a + b, 0),
+                allScores.length * 100,
+              )}
             </p>
 
             {!submitted ? (
@@ -579,7 +633,14 @@ export default function GamePage() {
                   {submitting ? "Saving…" : "Save to Leaderboard"}
                 </button>
                 {submitError && (
-                  <p style={{ color: "#ff6b6b", fontSize: "0.8rem", marginTop: "0.4rem", textAlign: "center" }}>
+                  <p
+                    style={{
+                      color: "#ff6b6b",
+                      fontSize: "0.8rem",
+                      marginTop: "0.4rem",
+                      textAlign: "center",
+                    }}
+                  >
                     {submitError}
                   </p>
                 )}
@@ -603,10 +664,7 @@ export default function GamePage() {
               View Leaderboard
             </button>
 
-            <button
-              className="g-button home-btn"
-              onClick={() => navigate("/")}
-            >
+            <button className="g-button home-btn" onClick={() => navigate("/")}>
               Home
             </button>
           </div>
