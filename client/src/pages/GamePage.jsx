@@ -413,10 +413,10 @@ export default function GamePage() {
 
   const finalFeedback = (total, maxTotal) => {
     const pct = total / maxTotal;
-    if (pct === 1) return "🏆 شكلك حافظ أماكن الأفياش والمكيفات بعد";
+    if (pct === 1) return "🏆 إذا ضاع اوريا يحولونه عليك";
     if (pct >= 0.5) return "👀 شيبه بس باقي ما شفت كل شي";
     if (pct >= 0.1) return "😂 يا اوريااااااااااااا";
-    return "💀 أنت متأكد إنك تدرس في الجامعة هذي؟";
+    return "💀 أنت متأكد إنك تدرس في الجامعة ذي؟";
   };
 
   if (isLoading) {
@@ -481,11 +481,13 @@ export default function GamePage() {
           <div
             className={`map-frame ${isDragging ? "dragging" : ""}`}
             ref={containerRef}
+            style={{ cursor: isDragging ? "move" : "default" }}
             onWheel={handleWheel}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onClick={handleMapClick}
           >
             <img
               src={campusMap}
@@ -500,8 +502,6 @@ export default function GamePage() {
               draggable={false}
             />
 
-            <div className="map-click-layer" onClick={handleMapClick} />
-
             {guessPos && (
               <svg
                 className="marker"
@@ -515,8 +515,19 @@ export default function GamePage() {
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <defs>
-                  <filter id="pin-shadow" x="-30%" y="-10%" width="160%" height="140%">
-                    <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodOpacity="0.5" />
+                  <filter
+                    id="pin-shadow"
+                    x="-30%"
+                    y="-10%"
+                    width="160%"
+                    height="140%"
+                  >
+                    <feDropShadow
+                      dx="0"
+                      dy="1.5"
+                      stdDeviation="1.5"
+                      floodOpacity="0.5"
+                    />
                   </filter>
                 </defs>
                 <path

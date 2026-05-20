@@ -169,12 +169,6 @@
   transform-origin: top left;
 }
 
-.map-click-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  cursor: default;
-}
 
 .marker {
   position: absolute;
