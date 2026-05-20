@@ -177,15 +177,38 @@
 
 .marker {
   position: absolute;
-  width: 16px;
-  height: 16px;
-  background: rgba(231, 76, 60, 0.9);
-  border: 2.5px solid #fff;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 36px;
+  transform: translate(-50%, -100%);
   pointer-events: none;
-  z-index: 2;
-  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.3);
+  z-index: 10;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.55));
+}
+
+.marker::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 28px;
+  height: 28px;
+  background: #e74c3c;
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+}
+
+.marker::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-radius: 50%;
+  z-index: 1;
 }
 
 .guess-actions {
