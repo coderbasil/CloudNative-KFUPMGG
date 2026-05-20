@@ -68,6 +68,12 @@ data "archive_file" "upload" {
   output_path = "${path.module}/upload.zip"
 }
 
+data "archive_file" "db_init" {
+  type        = "zip"
+  source_dir  = "${path.root}/lambdas/db-init"
+  output_path = "${path.module}/db-init.zip"
+}
+
 # ─── Lambda Functions ─────────────────────────────────────────────────────────
 
 resource "aws_lambda_function" "game" {
@@ -180,6 +186,43 @@ resource "aws_lambda_permission" "upload" {
   function_name = aws_lambda_function.upload.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_lambda_function" "db_init" {
+  filename         = data.archive_file.db_init.output_path
+  source_code_hash = data.archive_file.db_init.output_base64sha256
+  function_name    = "${var.project}-db-init"
+  role             = aws_iam_role.lambda.arn
+  handler          = "index.handler"
+  runtime          = "nodejs20.x"
+  timeout          = 30
+  memory_size      = 128
+
+  vpc_config {
+    subnet_ids         = var.subnet_ids
+    security_group_ids = [var.lambda_sg_id]
+  }
+
+  environment {
+    variables = {
+      DB_HOST     = var.db_host
+      DB_USER     = var.db_username
+      DB_PASSWORD = var.db_password
+      DB_NAME     = var.db_name
+    }
+  }
+}
+
+# Invoked automatically during `terraform apply` whenever the Lambda code changes.
+resource "aws_lambda_invocation" "db_init" {
+  function_name = aws_lambda_function.db_init.function_name
+  input         = "{}"
+
+  triggers = {
+    source_code_hash = data.archive_file.db_init.output_base64sha256
+  }
+
+  depends_on = [aws_lambda_function.db_init]
 }
 
 output "api_gateway_url" {

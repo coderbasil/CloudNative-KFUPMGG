@@ -153,6 +153,7 @@
   background: #0a0c14;
   cursor: crosshair;
   user-select: none;
+  touch-action: none;
 }
 
 .map-frame.dragging {
@@ -288,4 +289,38 @@
 .home-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.13) !important;
   box-shadow: none !important;
+}
+
+/* ── Leaderboard submit (final stage) ────────────── */
+.name-submit {
+  margin: 1rem 0;
+}
+
+.name-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  color: #fff;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+  padding: 0.75rem 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.name-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.name-input:focus {
+  border-color: #00c96b;
+}
+
+.saved-msg {
+  color: #00c96b;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0.75rem 0;
+  letter-spacing: 0.04em;
 }

@@ -97,4 +97,5 @@ infra/terraform.tfstate.backup
 # ---- Lambda build artifacts ----
 infra/lambdas/game/node_modules/
 infra/lambdas/upload/node_modules/
+infra/lambdas/db-init/node_modules/
 infra/modules/lambda/*.zip

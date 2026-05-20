@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import "../pages-css/GamePage.css";
@@ -33,8 +33,25 @@ export default function GamePage() {
   const [roundScore, setRoundScore] = useState(0);
   const [allScores, setAllScores] = useState([]);
 
+  const [playerName, setPlayerName] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
   const dragMovedRef = useRef(false);
   const containerRef = useRef(null);
+
+  // Refs that mirror state so touch handlers (added once) always read fresh values.
+  const scaleRef = useRef(scale);
+  const offsetRef = useRef(offset);
+  const mapNatWRef = useRef(mapNatW);
+  const mapNatHRef = useRef(mapNatH);
+  const lastTouchRef = useRef(null);
+  const lastPinchDistRef = useRef(null);
+
+  scaleRef.current = scale;
+  offsetRef.current = offset;
+  mapNatWRef.current = mapNatW;
+  mapNatHRef.current = mapNatH;
 
   useEffect(() => {
     const img = new Image();
@@ -83,6 +100,9 @@ export default function GamePage() {
         setGuessPos(null);
         setRoundScore(0);
         setAllScores([]);
+        setPlayerName("");
+        setSubmitted(false);
+        setSubmitting(false);
 
         setIsLoading(false);
       })
@@ -212,6 +232,101 @@ export default function GamePage() {
     });
   };
 
+  const handleTouchStart = useCallback((e) => {
+    e.preventDefault();
+    dragMovedRef.current = false;
+
+    if (e.touches.length === 2) {
+      const dx = e.touches[1].clientX - e.touches[0].clientX;
+      const dy = e.touches[1].clientY - e.touches[0].clientY;
+      lastPinchDistRef.current = Math.hypot(dx, dy);
+      lastTouchRef.current = null;
+    } else if (e.touches.length === 1) {
+      lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      lastPinchDistRef.current = null;
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e) => {
+    e.preventDefault();
+
+    if (e.touches.length === 2 && lastPinchDistRef.current !== null) {
+      dragMovedRef.current = true;
+      const t0 = e.touches[0];
+      const t1 = e.touches[1];
+      const newDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+      const ratio = newDist / lastPinchDistRef.current;
+      lastPinchDistRef.current = newDist;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const mx = (t0.clientX + t1.clientX) / 2 - rect.left;
+      const my = (t0.clientY + t1.clientY) / 2 - rect.top;
+
+      const prevScale = scaleRef.current;
+      const prevOffset = offsetRef.current;
+      const natW = mapNatWRef.current;
+      const natH = mapNatHRef.current;
+      const fitScale =
+        natW && natH
+          ? Math.min(
+              containerRef.current.clientWidth / natW,
+              containerRef.current.clientHeight / natH,
+            )
+          : 1;
+      const newScale = Math.min(5, Math.max(fitScale, prevScale * ratio));
+
+      setScale(newScale);
+      setOffset({
+        x: mx - (mx - prevOffset.x) * (newScale / prevScale),
+        y: my - (my - prevOffset.y) * (newScale / prevScale),
+      });
+    } else if (e.touches.length === 1 && lastTouchRef.current) {
+      dragMovedRef.current = true;
+      const dx = e.touches[0].clientX - lastTouchRef.current.x;
+      const dy = e.touches[0].clientY - lastTouchRef.current.y;
+      lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      const prev = offsetRef.current;
+      setOffset({ x: prev.x + dx, y: prev.y + dy });
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e) => {
+    e.preventDefault();
+
+    if (e.touches.length < 2) lastPinchDistRef.current = null;
+
+    if (e.touches.length === 0) {
+      if (!dragMovedRef.current && e.changedTouches.length === 1) {
+        const touch = e.changedTouches[0];
+        const rect = containerRef.current.getBoundingClientRect();
+        const rawX = (touch.clientX - rect.left - offsetRef.current.x) / scaleRef.current;
+        const rawY = (touch.clientY - rect.top - offsetRef.current.y) / scaleRef.current;
+        if (rawX >= 0 && rawY >= 0 && rawX <= mapNatWRef.current && rawY <= mapNatHRef.current) {
+          setGuessPos({ x: Math.round(rawX), y: Math.round(rawY) });
+        }
+      }
+      lastTouchRef.current = null;
+    } else if (e.touches.length === 1) {
+      lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  }, []);
+
+  useEffect(() => {
+    if (stage !== "guess") return;
+    const el = containerRef.current;
+    if (!el) return;
+
+    el.addEventListener("touchstart", handleTouchStart, { passive: false });
+    el.addEventListener("touchmove", handleTouchMove, { passive: false });
+    el.addEventListener("touchend", handleTouchEnd, { passive: false });
+
+    return () => {
+      el.removeEventListener("touchstart", handleTouchStart);
+      el.removeEventListener("touchmove", handleTouchMove);
+      el.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [stage, handleTouchStart, handleTouchMove, handleTouchEnd]);
+
   const handleGuess = () => {
     if (!guessPos) return;
 
@@ -221,18 +336,40 @@ export default function GamePage() {
 
     let newScore;
 
-    if (distance <= 20) {
+    if (distance <= 50) {
       newScore = 100;
-    } else if (distance >= 200) {
+    } else if (distance >= 500) {
       newScore = 0;
     } else {
-      newScore = Math.round(100 * (1 - (distance - 20) / 180));
+      newScore = Math.round(100 * Math.pow(1 - (distance - 50) / 450, 1.2));
     }
 
     setRoundScore(newScore);
     setAllScores((prev) => [...prev, newScore]);
 
     setStage("result");
+  };
+
+  const handleSubmitScore = async () => {
+    if (!playerName.trim() || submitting) return;
+    setSubmitting(true);
+    const totalScore = allScores.reduce((a, b) => a + b, 0);
+    try {
+      await fetch(api("/api/leaderboard"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          player_name: playerName.trim(),
+          score: totalScore,
+          rounds: allScores.length,
+        }),
+      });
+      setSubmitted(true);
+    } catch {
+      // silent fail — score is optional
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const scoreFeedback = (s) => {
@@ -407,12 +544,37 @@ export default function GamePage() {
           <div className="result-card">
             <h2 className="result-title">Game Complete!</h2>
 
-            <div className="result-score">{avgScore} / 100</div>
+            <div className="result-score">
+              {allScores.reduce((a, b) => a + b, 0)} / {allScores.length * 100}
+            </div>
 
             <p className="result-feedback">
-              Average score across {allScores.length} round
-              {allScores.length !== 1 ? "s" : ""}
+              {allScores.length} round{allScores.length !== 1 ? "s" : ""} &mdash; avg {avgScore} / 100
             </p>
+
+            {!submitted ? (
+              <div className="name-submit">
+                <input
+                  className="name-input"
+                  type="text"
+                  placeholder="Enter your name"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSubmitScore()}
+                  maxLength={30}
+                />
+                <button
+                  className="g-button"
+                  style={{ width: "100%", marginTop: "0.5rem" }}
+                  disabled={!playerName.trim() || submitting}
+                  onClick={handleSubmitScore}
+                >
+                  {submitting ? "Saving…" : "Save to Leaderboard"}
+                </button>
+              </div>
+            ) : (
+              <p className="saved-msg">Score saved!</p>
+            )}
 
             <button
               className="g-button play-again-btn"
@@ -421,7 +583,18 @@ export default function GamePage() {
               Play Again
             </button>
 
-            <button className="g-button home-btn" onClick={() => navigate("/")}>
+            <button
+              className="g-button home-btn"
+              style={{ marginTop: "0.5rem" }}
+              onClick={() => navigate("/leaderboard")}
+            >
+              View Leaderboard
+            </button>
+
+            <button
+              className="g-button home-btn"
+              onClick={() => navigate("/")}
+            >
               Home
             </button>
           </div>

@@ -6,6 +6,7 @@ import pool from "./db.js";
 import photos from "./routes/photos.js";
 import auth from "./routes/auth.js";
 import admins from "./routes/admins.js";
+import leaderboard from "./routes/leaderboard.js";
 dotenv.config();
 
 const app = express();
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use("/api/photos", photos);
 app.use("/api/auth", auth);
 app.use("/api/admins", admins);
+app.use("/api/leaderboard", leaderboard);
 
 async function ensureDatabase() {
   const conn = await mysql.createConnection({
@@ -37,6 +39,16 @@ async function initDb() {
       email VARCHAR(255) NOT NULL UNIQUE,
       password VARCHAR(255) NOT NULL,
       type ENUM('admin', 'player', 'photographer') NOT NULL DEFAULT 'player'
+    )
+  `);
+
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS leaderboard (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      player_name VARCHAR(30) NOT NULL,
+      score INT NOT NULL,
+      rounds INT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
